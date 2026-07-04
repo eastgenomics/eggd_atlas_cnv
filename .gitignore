@@ -1,0 +1,8 @@
+# Python / build artefacts
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Memory (gitignored by default per global policy; add !memory/ to track intentionally)
+memory/
