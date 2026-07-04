@@ -2,8 +2,20 @@
 """Generate dxworkflow.json for eggd_atlas_cnv (9 stages). Run from repo root.
 Fixed reference file IDs are from REFERENCE.md §2."""
 import json
+import os
 
 PROJ_REF = "project-Fkb6Gkj433GVVvj73J7x8KbV"  # canonical reference project
+
+# Stage executables. Prefer exact app IDs from scripts/app_ids.json (built this session)
+# because by-name resolution (app-<name>) resolves to any PUBLISHED app of that name,
+# which for eggd_chr_prefix and the reused cnvkit apps shadows our dev builds with a
+# different interface. Fall back to app-<name> if the map is absent.
+_IDS_PATH = os.path.join(os.path.dirname(__file__), "app_ids.json")
+APP_ID = json.load(open(_IDS_PATH)) if os.path.exists(_IDS_PATH) else {}
+
+
+def execu(app_name):
+    return APP_ID.get(app_name, f"app-{app_name}")
 
 # Fixed reference files (REFERENCE §2). Objects without an explicit project use bare id.
 F = {
@@ -33,7 +45,10 @@ F = {
 
 
 def link_file(key):
-    return {"$dnanexus_link": F[key]}
+    v = F[key]
+    if "project" in v:
+        return {"$dnanexus_link": {"project": v["project"], "id": v["id"]}}
+    return {"$dnanexus_link": v["id"]}  # bare-string form for project-less file refs
 
 
 def wf(name):  # workflow-level input
@@ -47,7 +62,7 @@ def stg(stage, field):  # stage output link (JBOR)
 stages = [
     {
         "id": "chr_prefix",
-        "executable": "app-eggd_chr_prefix",
+        "executable": execu("eggd_chr_prefix"),
         "input": {
             "input_bam": wf("input_bam"),
             "mode": "add_chr",
@@ -55,7 +70,7 @@ stages = [
     },
     {
         "id": "amber",
-        "executable": "app-eggd_cgp-amber",
+        "executable": execu("eggd_cgp-amber"),
         "input": {
             "tumour_bam": stg("chr_prefix", "output_bam"),
             "tumour_bai": stg("chr_prefix", "output_bai"),
@@ -66,7 +81,7 @@ stages = [
     },
     {
         "id": "cobalt",
-        "executable": "app-eggd_cgp-cobalt",
+        "executable": execu("eggd_cgp-cobalt"),
         "input": {
             "tumour_bam": stg("chr_prefix", "output_bam"),
             "tumour_bai": stg("chr_prefix", "output_bai"),
@@ -81,7 +96,7 @@ stages = [
     },
     {
         "id": "sage",
-        "executable": "app-eggd_cgp-sage",
+        "executable": execu("eggd_cgp-sage"),
         "input": {
             "tumour_bam": stg("chr_prefix", "output_bam"),
             "tumour_bai": stg("chr_prefix", "output_bai"),
@@ -99,7 +114,7 @@ stages = [
     },
     {
         "id": "purple",
-        "executable": "app-eggd_cgp-purple",
+        "executable": execu("eggd_cgp-purple"),
         "input": {
             "sample_id": wf("sample_id"),
             "purple_jar": link_file("PURPLE_JAR"),
@@ -119,7 +134,7 @@ stages = [
     },
     {
         "id": "qc_flags",
-        "executable": "app-eggd_cgp-qc-flags",
+        "executable": execu("eggd_cgp-qc-flags"),
         "input": {
             "sample_id": wf("sample_id"),
             "purity_tsv": stg("purple", "purity_tsv"),
@@ -128,7 +143,7 @@ stages = [
     },
     {
         "id": "cnvkit_batch",
-        "executable": "app-eggd_cgp-cnvkit-batch",
+        "executable": execu("eggd_cgp-cnvkit-batch"),
         "input": {
             "tumour_bam": stg("chr_prefix", "output_bam"),
             "tumour_bai": stg("chr_prefix", "output_bai"),
@@ -142,7 +157,7 @@ stages = [
     },
     {
         "id": "purple_plotter",
-        "executable": "app-eggd_purple_plotter",
+        "executable": execu("eggd_purple_plotter"),
         "input": {
             "sample_id": wf("sample_id"),
             "purple_tar": stg("purple", "purple_tar"),
@@ -154,7 +169,7 @@ stages = [
     },
     {
         "id": "cnv_chr_strip",
-        "executable": "app-eggd_cnv_chr_strip",
+        "executable": execu("eggd_cnv_chr_strip"),
         "input": {
             "sample_id": wf("sample_id"),
             "cnvkit_cnr": stg("cnvkit_batch", "copy_ratios"),
