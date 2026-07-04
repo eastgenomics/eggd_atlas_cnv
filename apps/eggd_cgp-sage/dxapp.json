@@ -1,0 +1,44 @@
+{
+  "name": "eggd_cgp-sage",
+  "title": "eggd_cgp-sage",
+  "summary": "SAGE 5.0-beta.11 tumour-only somatic calling over CGP+backbone callable regions",
+  "version": "1.0.0",
+  "dxapi": "1.0.0",
+  "developers": ["org-emee_1"],
+  "authorizedUsers": ["org-emee_1"],
+  "inputSpec": [
+    {"name": "tumour_bam",      "class": "file",   "label": "Tumour BAM (chr-prefix)"},
+    {"name": "tumour_bai",      "class": "file",   "label": "Tumour BAM index"},
+    {"name": "sample_id",       "class": "string", "label": "Sample ID"},
+    {"name": "sage_jar",        "class": "file",   "label": "SAGE JAR"},
+    {"name": "ref_fasta",       "class": "file",   "label": "Reference FASTA (chr-prefix, .fa.gz)"},
+    {"name": "ref_fai",         "class": "file",   "label": "Reference FASTA index (.fa.fai)"},
+    {"name": "hotspots_vcf",    "class": "file",   "label": "KnownHotspots.somatic.38.vcf.gz (chr)"},
+    {"name": "hotspots_tbi",    "class": "file",   "label": "KnownHotspots index (.tbi)"},
+    {"name": "panel_bed",       "class": "file",   "label": "cgp_backbone_callable.bed (chr, 19 Mb)"},
+    {"name": "hc_bed",          "class": "file",   "label": "HG001 GIAB high-confidence BED (chr)"},
+    {"name": "pon_file",        "class": "file",   "label": "hmf_wgs_sage_pon_1000.38.tsv.gz"},
+    {"name": "ensembl_data",    "class": "file",   "label": "ensembl_data.tar.gz"}
+  ],
+  "outputSpec": [
+    {"name": "somatic_vcf",     "class": "file",   "label": "Somatic VCF (.vcf.gz)"},
+    {"name": "somatic_vcf_tbi", "class": "file",   "label": "Somatic VCF index (.tbi)"}
+  ],
+  "runSpec": {
+    "interpreter": "bash",
+    "file": "src/code.sh",
+    "distribution": "Ubuntu",
+    "release": "24.04",
+    "version": "0",
+    "timeoutPolicy": {"*": {"hours": 8}},
+    "execDepends": [
+      {"name": "openjdk-21-jre-headless", "package_manager": "apt"},
+      {"name": "samtools",                "package_manager": "apt"},
+      {"name": "tabix",                   "package_manager": "apt"}
+    ],
+    "systemRequirements": {
+      "*": {"instanceType": "mem2_ssd1_v2_x16"}
+    }
+  },
+  "regionalOptions": {"aws:eu-central-1": {}}
+}

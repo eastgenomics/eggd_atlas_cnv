@@ -1,0 +1,40 @@
+{
+  "name": "eggd_cgp-cobalt",
+  "title": "eggd_cgp-cobalt",
+  "summary": "COBALT 3.0-beta.5 targeted tumour-only depth ratios with normalisation file",
+  "version": "1.0.0",
+  "dxapi": "1.0.0",
+  "developers": ["org-emee_1"],
+  "authorizedUsers": ["org-emee_1"],
+  "inputSpec": [
+    {"name": "tumour_bam",      "class": "file",   "label": "Tumour BAM (chr-prefix)"},
+    {"name": "tumour_bai",      "class": "file",   "label": "Tumour BAM index"},
+    {"name": "sample_id",       "class": "string", "label": "Sample ID"},
+    {"name": "cobalt_jar",      "class": "file",   "label": "COBALT JAR"},
+    {"name": "norm_file",       "class": "file",   "label": "target_regions_normalisation.tsv"},
+    {"name": "diploid_regions", "class": "file",   "label": "DiploidRegions.38.bed.gz (chr)"},
+    {"name": "gc_profile",      "class": "file",   "label": "GC_profile.1000bp.38.cnp (chr)"},
+    {"name": "ref_fasta",       "class": "file",   "label": "Reference FASTA no-chr (.fa.gz) — COBALT internal use"},
+    {"name": "ref_fai",         "class": "file",   "label": "Reference FASTA index (.fa.fai)"}
+  ],
+  "outputSpec": [
+    {"name": "cobalt_tar", "class": "file", "label": "COBALT output directory (.cobalt.tar.gz)"}
+  ],
+  "runSpec": {
+    "interpreter": "bash",
+    "file": "src/code.sh",
+    "distribution": "Ubuntu",
+    "release": "24.04",
+    "version": "0",
+    "timeoutPolicy": {"*": {"hours": 6}},
+    "execDepends": [
+      {"name": "openjdk-21-jre-headless", "package_manager": "apt"},
+      {"name": "samtools",                "package_manager": "apt"},
+      {"name": "tabix",                   "package_manager": "apt"}
+    ],
+    "systemRequirements": {
+      "*": {"instanceType": "mem2_ssd1_v2_x4"}
+    }
+  },
+  "regionalOptions": {"aws:eu-central-1": {}}
+}

@@ -1,0 +1,36 @@
+{
+  "name": "eggd_cgp-amber",
+  "title": "eggd_cgp-amber",
+  "summary": "AMBER 4.3-beta.4 tumour-only BAF at germline het-SNP sites",
+  "version": "1.0.0",
+  "dxapi": "1.0.0",
+  "developers": ["org-emee_1"],
+  "authorizedUsers": ["org-emee_1"],
+  "inputSpec": [
+    {"name": "tumour_bam",       "class": "file",   "label": "Tumour BAM (chr-prefix)"},
+    {"name": "tumour_bai",       "class": "file",   "label": "Tumour BAM index"},
+    {"name": "sample_id",        "class": "string", "label": "Sample ID"},
+    {"name": "amber_jar",        "class": "file",   "label": "AMBER JAR"},
+    {"name": "germline_sites",   "class": "file",   "label": "AmberGermlineSites.38.tsv.gz (chr)"}
+  ],
+  "outputSpec": [
+    {"name": "amber_tar", "class": "file", "label": "AMBER output directory (.amber.tar.gz)"}
+  ],
+  "runSpec": {
+    "interpreter": "bash",
+    "file": "src/code.sh",
+    "distribution": "Ubuntu",
+    "release": "24.04",
+    "version": "0",
+    "timeoutPolicy": {"*": {"hours": 6}},
+    "execDepends": [
+      {"name": "openjdk-21-jre-headless", "package_manager": "apt"},
+      {"name": "samtools",                "package_manager": "apt"},
+      {"name": "tabix",                   "package_manager": "apt"}
+    ],
+    "systemRequirements": {
+      "*": {"instanceType": "mem1_ssd1_v2_x4"}
+    }
+  },
+  "regionalOptions": {"aws:eu-central-1": {}}
+}
