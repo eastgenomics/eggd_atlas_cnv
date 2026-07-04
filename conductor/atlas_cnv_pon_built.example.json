@@ -1,0 +1,59 @@
+{
+  "executables": {
+    "app-CHR-PREFIX": {
+      "name": "eggd_chr_prefix",
+      "analysis": "analysis_1",
+      "per_sample": true,
+      "process_fastqs": false,
+      "inputs": {
+        "input_bam": {"$dnanexus_link": {"analysis": "analysis_0", "stage": "stage-align", "field": "bam"}},
+        "mode": "add_chr"
+      },
+      "output_dirs": {"app-CHR-PREFIX": "/OUT-FOLDER/APP-NAME"}
+    },
+    "app-CNVKIT-COVERAGE": {
+      "name": "eggd_cgp-cnvkit-coverage",
+      "analysis": "analysis_2",
+      "per_sample": true,
+      "process_fastqs": false,
+      "depends_on": ["analysis_1"],
+      "inputs": {
+        "tumour_bam": {"$dnanexus_link": {"analysis": "analysis_1", "field": "output_bam"}},
+        "tumour_bai": {"$dnanexus_link": {"analysis": "analysis_1", "field": "output_bai"}},
+        "sample_id": "INPUT-SAMPLE-NAME",
+        "baits": {"$dnanexus_link": {"project": "project-XXXX", "id": "file-J8F94G845FG5ZG55xFzF1fP6"}}
+      },
+      "output_dirs": {"app-CNVKIT-COVERAGE": "/OUT-FOLDER/APP-NAME"}
+    },
+    "app-CNVKIT-PON": {
+      "name": "eggd_cgp-cnvkit-pon",
+      "analysis": "analysis_3",
+      "per_sample": false,
+      "process_fastqs": false,
+      "depends_on": ["analysis_2"],
+      "hold": true,
+      "inputs": {
+        "coverage_files": {"$dnanexus_link": {"analysis": "analysis_2", "field": "coverage_cnn"}},
+        "fasta": {"$dnanexus_link": {"project": "project-Fkb6Gkj433GVVvj73J7x8KbV", "id": "file-Gb73P8Q4XGyX9QZ0g9qp61xV"}}
+      },
+      "inputs_filter": {
+        "coverage_files": ["^[0-9]+S[0-9]+"]
+      },
+      "output_dirs": {"app-CNVKIT-PON": "/OUT-FOLDER/APP-NAME"}
+    },
+    "workflow-ATLAS": {
+      "name": "eggd_atlas_cnv",
+      "analysis": "analysis_4",
+      "per_sample": true,
+      "process_fastqs": false,
+      "depends_on": ["analysis_3"],
+      "inputs": {
+        "input_bam": {"$dnanexus_link": {"analysis": "analysis_1", "field": "output_bam"}},
+        "sample_id": "INPUT-SAMPLE-NAME",
+        "cnvkit_cn_reference": {"$dnanexus_link": {"analysis": "analysis_3", "field": "cn_reference"}},
+        "ploidy_cap_purity_threshold": 0.35
+      },
+      "output_dirs": {"workflow-ATLAS": "/OUT-FOLDER/STAGE-NAME"}
+    }
+  }
+}
