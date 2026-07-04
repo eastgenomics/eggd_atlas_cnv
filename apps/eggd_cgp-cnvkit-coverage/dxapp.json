@@ -1,0 +1,95 @@
+{
+  "name": "eggd_cgp-cnvkit-coverage",
+  "title": "eggd_cgp-cnvkit-coverage",
+  "summary": "Computes CNVkit on-target read coverage for one tumour-only CGP panel sample (amplicon mode). Output .targetcoverage.cnn feeds eggd_cgp-cnvkit-pon (PoN build) or eggd_cgp-cnvkit-batch (analysis).",
+  "dxapi": "1.0.0",
+  "version": "2.0.0",
+  "properties": {
+    "githubRelease": "1.0.0"
+  },
+  "inputSpec": [
+    {
+      "name": "tumour_bam",
+      "class": "file",
+      "label": "Tumour BAM",
+      "patterns": [
+        "*.bam"
+      ],
+      "help": "Mapped reads for the tumour sample. BAM must be indexed (tumour_bai required). Chr-prefixed chromosome names (chr1, chr2 ...) expected to match the baits BED."
+    },
+    {
+      "name": "tumour_bai",
+      "class": "file",
+      "label": "Tumour BAM index",
+      "patterns": [
+        "*.bai",
+        "*.bam.bai"
+      ],
+      "help": "BAM index corresponding to tumour_bam."
+    },
+    {
+      "name": "sample_id",
+      "class": "string",
+      "label": "Sample ID",
+      "help": "Used as the output file stem: <sample_id>.targetcoverage.cnn."
+    },
+    {
+      "name": "baits",
+      "class": "file",
+      "label": "Gene panel BED",
+      "patterns": [
+        "*.bed"
+      ],
+      "help": "Target intervals in BED format. Chr-prefix chromosome names required (chr1, chr2 ...). For the Twist Oncology CGP panel, use the deduplicated BED (20,905 intervals after removing 7 coordinate-duplicate rows)."
+    },
+    {
+      "name": "target_avg_size",
+      "class": "int",
+      "label": "Average on-target bin size (bp)",
+      "default": 250,
+      "optional": true,
+      "help": "Target bin size in base pairs. Default 250 bp. Must be consistent across coverage, PoN build, and analysis runs."
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "coverage_cnn",
+      "class": "file",
+      "label": "Target coverage file (.targetcoverage.cnn)",
+      "patterns": [
+        "*.targetcoverage.cnn"
+      ],
+      "help": "Per-interval read depth in CNVkit .cnn format. Pass to eggd_cgp-cnvkit-pon for PoN construction, or to eggd_cgp-cnvkit-batch as pre-computed coverage."
+    }
+  ],
+  "runSpec": {
+    "timeoutPolicy": {
+      "*": {
+        "hours": 2
+      }
+    },
+    "distribution": "Ubuntu",
+    "release": "24.04",
+    "version": "0",
+    "interpreter": "bash",
+    "file": "src/code.sh"
+  },
+  "developers": [
+    "org-emee_1"
+  ],
+  "authorizedUsers": [
+    "org-emee_1"
+  ],
+  "regionalOptions": {
+    "aws:eu-central-1": {
+      "systemRequirements": {
+        "*": {
+          "instanceType": "mem1_ssd1_v2_x4"
+        }
+      }
+    }
+  },
+  "access": {
+    "allProjects": "VIEW"
+  }
+}

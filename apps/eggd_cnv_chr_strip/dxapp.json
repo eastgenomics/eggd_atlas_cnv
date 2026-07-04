@@ -1,0 +1,38 @@
+{
+  "name": "eggd_cnv_chr_strip",
+  "title": "eggd_cnv_chr_strip",
+  "summary": "Write Ensembl-named (*.nochr.*) copies of CNV text files; strips chr from the chromosome column only",
+  "version": "0.1.0",
+  "dxapi": "1.0.0",
+  "developers": ["org-emee_1"],
+  "authorizedUsers": ["org-emee_1"],
+  "inputSpec": [
+    {"name": "sample_id",          "class": "string", "label": "Sample ID (output stem)"},
+    {"name": "cnvkit_cnr",         "class": "file",   "label": "CNVkit *.cnr",           "optional": true},
+    {"name": "cnvkit_cns",         "class": "file",   "label": "CNVkit *.cns",           "optional": true},
+    {"name": "cnvkit_call_cns",    "class": "file",   "label": "CNVkit *.call.cns",      "optional": true},
+    {"name": "cnvkit_genemetrics", "class": "file",   "label": "CNVkit *.genemetrics.tsv", "optional": true},
+    {"name": "purple_cnv_somatic", "class": "file",   "label": "PURPLE *.purple.cnv.somatic.tsv", "optional": true},
+    {"name": "purple_cnv_gene",    "class": "file",   "label": "PURPLE *.purple.cnv.gene.tsv",    "optional": true}
+  ],
+  "outputSpec": [
+    {"name": "cnvkit_cnr_nochr",         "class": "file", "label": "{s}.nochr.cnr",                    "optional": true},
+    {"name": "cnvkit_cns_nochr",         "class": "file", "label": "{s}.nochr.cns",                    "optional": true},
+    {"name": "cnvkit_call_cns_nochr",    "class": "file", "label": "{s}.nochr.call.cns",               "optional": true},
+    {"name": "cnvkit_genemetrics_nochr", "class": "file", "label": "{s}.nochr.genemetrics.tsv",        "optional": true},
+    {"name": "purple_cnv_somatic_nochr", "class": "file", "label": "{s}.purple.cnv.somatic.nochr.tsv", "optional": true},
+    {"name": "purple_cnv_gene_nochr",    "class": "file", "label": "{s}.purple.cnv.gene.nochr.tsv",    "optional": true}
+  ],
+  "runSpec": {
+    "interpreter": "bash",
+    "file": "src/code.sh",
+    "distribution": "Ubuntu",
+    "release": "24.04",
+    "version": "0",
+    "timeoutPolicy": {"*": {"hours": 1}},
+    "systemRequirements": {
+      "*": {"instanceType": "mem1_ssd1_v2_x2"}
+    }
+  },
+  "regionalOptions": {"aws:eu-central-1": {}}
+}
