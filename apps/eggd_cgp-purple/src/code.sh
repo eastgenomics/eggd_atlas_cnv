@@ -66,7 +66,9 @@ main() {
     [[ -n "${ENSEMBL_DIR}" ]] || { echo "ERROR: ensembl_gene_data.csv not found"; exit 1; }
     echo "  Ensembl dir: ${ENSEMBL_DIR}"
 
-    WORK="${sample_id}"           # PURPLE output dir; names its files ${sample_id}.purple.*
+    WORK="purple_out"           # PURPLE output dir; MUST differ from the amber/cobalt
+                                # extract dir (./${sample_id}) so the re-run rm -rf below
+                                # never deletes the AMBER/COBALT inputs.
 
     run_purple() {                # "$@" = extra PURPLE args (may be empty)
         java -Xmx10G -jar purple.jar \
