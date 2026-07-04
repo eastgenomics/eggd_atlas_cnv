@@ -157,7 +157,13 @@ fi
 
 # ── 7. Upload outputs ───────────────────────────────────────────────────
 echo "[6/7] Uploading..."
-tar --no-same-owner -czf "${sample_id}.purple.tar.gz" "${WORK}/"
+# The plotter reads *.amber.baf.tsv.gz, *target_region_cn.tsv and *purple.segment.tsv from
+# purple_tar. PURPLE emits the latter two but NOT the amber baf (an AMBER output). The legacy
+# applet bundled it by writing PURPLE output into the same dir as the amber/cobalt extracts;
+# we now keep them separate (so the two-pass rm is safe) and assemble the tar explicitly by
+# adding the PURPLE outputs into the AMBER extract dir (which holds *.amber.baf.tsv.gz).
+cp -a "${WORK}/." "${AMBER_DIR}/"
+tar --no-same-owner -czf "${sample_id}.purple.tar.gz" "${AMBER_DIR}/"
 
 dx-jobutil-add-output purple_tar       "$(dx upload "${sample_id}.purple.tar.gz" --brief)" --class=file
 dx-jobutil-add-output purity_tsv       "$(dx upload "${PTSV}"      --brief)" --class=file
