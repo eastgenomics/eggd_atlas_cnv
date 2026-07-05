@@ -461,6 +461,17 @@ dx-jobutil-add-output cnv_gene_tsv    "$(dx upload "${CNV_GENE}"    --brief)" --
 > `*.purple.cnv.somatic.tsv` / `*.purple.cnv.gene.tsv` when implementing, so a header-only
 > fallback is schema-compatible with a populated file.
 
+> **Build-critical (learned in the v1.0.0 build):** `eggd_purple_plotter` reads THREE files
+> out of `purple_tar` — `*.amber.baf.tsv.gz`, `*target_region_cn.tsv`, `*purple.segment.tsv`.
+> PURPLE emits the last two but NOT the AMBER BAF. Because `WORK` (`out_${sample_id}`) is a
+> separate dir from the AMBER/COBALT extract dir (`${sample_id}`), `tar "${WORK}/"` will NOT
+> contain `amber.baf.tsv.gz` and the plotter stage fails with
+> `Could not find *amber.baf.tsv in ...purple.tar.gz`. Fix: before tarring, copy the PURPLE
+> outputs into the AMBER extract dir and tar THAT (`cp -a "${WORK}/." "${AMBER_DIR}/"; tar
+> -czf "${sample_id}.purple.tar.gz" "${AMBER_DIR}/"`), so the archive bundles the BAF too.
+> (Keep `WORK` distinct from `${sample_id}` — the two-pass `rm -rf "${WORK}"` must never
+> delete the AMBER/COBALT inputs.)
+
 **Verification:**
 ```bash
 .venv/bin/pytest tests/test_ploidy_gate.py tests/test_purity.py -v   # helper logic

@@ -6,3 +6,6 @@ __pycache__/
 
 # Memory (gitignored by default per global policy; add !memory/ to track intentionally)
 memory/
+
+# pi local session state
+.pi/
