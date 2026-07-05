@@ -24,3 +24,11 @@ def test_bad_file_raises(tmp_path):
     p.write_text("purity\tploidy\nNA\tNA\n")
     with pytest.raises(PurityParseError):
         read_purity_ploidy(p)
+
+
+@pytest.mark.parametrize("bad", ["inf", "-inf", "Infinity", "nan"])
+def test_non_finite_raises(tmp_path, bad):
+    p = tmp_path / "nf.tsv"
+    p.write_text(f"purity\tploidy\n{bad}\t2.0\n")
+    with pytest.raises(PurityParseError):
+        read_purity_ploidy(p)

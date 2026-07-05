@@ -1,6 +1,3 @@
-from pathlib import Path
-
-
 class ChrColumnError(ValueError):
     ...
 
@@ -28,9 +25,12 @@ def _chrom_index(header: list[str], chrom_column):
 def strip_file(in_path, out_path, chrom_column=None) -> int:
     """Rewrite ONLY the chromosome column of a TSV, preserving every other field and the
     original line terminators exactly. Returns the number of data rows rewritten."""
-    lines = Path(in_path).read_text().splitlines(keepends=True)
+    # newline="" disables universal-newline translation so CRLF/CR terminators survive verbatim.
+    with open(in_path, "r", newline="") as fh:
+        lines = fh.read().splitlines(keepends=True)
     if not lines:
-        Path(out_path).write_text("")
+        with open(out_path, "w", newline="") as fh:
+            fh.write("")
         return 0
     idx = _chrom_index(lines[0].rstrip("\r\n").split("\t"), chrom_column)
     if idx is None:
@@ -44,5 +44,6 @@ def strip_file(in_path, out_path, chrom_column=None) -> int:
             fields[idx] = strip_chrom(fields[idx])
             n += 1
         out.append("\t".join(fields) + term)
-    Path(out_path).write_text("".join(out))
+    with open(out_path, "w", newline="") as fh:
+        fh.write("".join(out))
     return n

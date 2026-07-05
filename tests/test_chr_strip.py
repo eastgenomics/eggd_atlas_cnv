@@ -44,3 +44,12 @@ def test_no_chromosome_column_errors(tmp_path):
     p.write_text("foo\tbar\n1\t2\n")
     with pytest.raises(ChrColumnError):
         strip_file(p, o)
+
+
+def test_crlf_terminators_preserved(tmp_path):
+    # CRLF line endings must survive verbatim (line-preserving rewrite)
+    p, o = tmp_path / "in.tsv", tmp_path / "out.tsv"
+    p.write_bytes(b"chromosome\tstart\r\nchr7\t1\r\nchrMT\t2\r\n")
+    assert strip_file(p, o) == 2
+    data = o.read_bytes()
+    assert data == b"chromosome\tstart\r\n7\t1\r\nMT\t2\r\n"
