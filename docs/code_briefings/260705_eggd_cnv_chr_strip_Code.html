@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eggd_cnv_chr_strip — Code Explainer</title>
+<style>
+  :root{
+    --ink:#0d1b2a; --ink-soft:#354656; --muted:#6b7c8d;
+    --line:#e0e7ef; --line-strong:#c5d0db;
+    --bg:#f7f9fb; --paper:#ffffff;
+    --accent:#005eb8; --accent-deep:#003d78; --accent-mid:#1a73c4; --accent-soft:#e3edf8;
+    --green:#1a6e47; --green-soft:#e0f0e8;
+    --amber:#b35c00; --amber-soft:#fdf0e0;
+    --red:#9b2335; --red-soft:#fce8ea;
+    --purple:#4b2d8e; --purple-soft:#ede8f8;
+    --shadow:0 1px 3px rgba(13,27,42,.05),0 4px 20px rgba(13,27,42,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:var(--accent-mid);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1320px;margin:0 auto}
+  @media(max-width:860px){.layout{grid-template-columns:1fr}.toc{display:none}}
+  main{padding:0 56px 96px;max-width:900px}
+  @media(max-width:860px){main{padding:0 24px 64px}}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.015em;font-weight:800;color:var(--ink);margin-bottom:14px;max-width:26ch}
+  h2{font-size:24px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  h2 .sec-num{font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:#fff;
+    padding:3px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
+  h3{font-size:17px;font-weight:700;margin:28px 0 10px;color:var(--ink)}
+  h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:600}
+  p{margin-bottom:13px;color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  ul,ol{margin:0 0 14px;padding-left:22px}
+  li{margin:5px 0;color:var(--ink-soft)}
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:28px 24px;background:var(--paper);border-right:1px solid var(--line);font-size:13px}
+  .toc-brand{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent-deep);margin-bottom:20px;line-height:1.4}
+  .toc-section{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--muted);margin:18px 0 6px}
+  .toc ul{list-style:none}
+  .toc ul li a{display:block;padding:5px 0 5px 16px;color:var(--ink-soft);
+    border-left:2px solid transparent;transition:all .15s;font-size:12.5px;line-height:1.4}
+  .toc ul li a:hover{color:var(--accent);border-left-color:var(--accent);text-decoration:none;padding-left:20px}
+  .toc .meta{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.6}
+  .hero{padding:52px 0 36px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px}
+  .hero .sub{font-size:17px;line-height:1.55;color:var(--ink-soft);max-width:64ch}
+  .hero .meta-row{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap}
+  .hero .meta-item{font-size:12px;color:var(--muted)}
+  .hero .meta-item strong{color:var(--ink-soft)}
+  section{padding-top:52px}
+  section+section{border-top:1px solid var(--line)}
+  footer{padding:32px 56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);max-width:1320px;margin:0 auto;line-height:1.7}
+  .callout{border-radius:6px;padding:18px 22px;margin:18px 0;border:1px solid}
+  .callout.blue{border-color:#b3cce8;background:var(--accent-soft)}
+  .callout.green{border-color:#a8d4bb;background:var(--green-soft)}
+  .callout.amber{border-color:#e8c28a;background:var(--amber-soft)}
+  .callout .tag{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+  .callout.blue .tag{color:var(--accent-deep)}
+  .callout.green .tag{color:var(--green)}
+  .callout.amber .tag{color:var(--amber)}
+  .callout p:last-child{margin:0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f0f4f8;font-weight:600;font-size:12.5px;color:var(--ink);letter-spacing:.02em}
+  tr:hover td{background:#fafbfd}
+  figure{margin:24px 0}
+  .fig-wrap{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:20px;overflow:auto}
+  figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;font-style:italic;line-height:1.5}
+  .ref{display:inline-block;background:#f0f4f8;border:1px solid var(--line);border-radius:4px;padding:1px 7px;
+    font-size:11.5px;color:var(--ink-soft);font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:#f0f4f8;padding:2px 6px;border-radius:3px;color:var(--accent-deep)}
+  .cb{background:#1e2d3d;border-radius:8px;padding:20px 22px;margin:16px 0;overflow-x:auto}
+  .cb pre{color:#cdd9e5;font:13px/1.75 ui-monospace,Menlo,Consolas,monospace;margin:0;white-space:pre}
+  .cb .c{color:#6e9cbf} .cb .k{color:#79b8ff} .cb .s{color:#9ecbff} .cb .n{color:#b392f0} .cb .f{color:#85e89d} .cb .t{color:#ffab70}
+  .acb{margin:20px 0 32px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .acb-header{background:var(--accent-deep);padding:10px 16px;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+  .acb-fn{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;color:#fff;font-weight:700}
+  .acb-desc{font-size:12px;color:#a8c8e8}
+  .acb-code{background:#1e2d3d;padding:0;overflow-x:auto}
+  .acb-code pre{color:#cdd9e5;font:12.5px/1.9 ui-monospace,Menlo,Consolas,monospace;margin:0;padding:16px 20px;white-space:pre}
+  .acb .c{color:#6e9cbf} .acb .k{color:#79b8ff} .acb .s{color:#9ecbff} .acb .n{color:#b392f0} .acb .f{color:#85e89d} .acb .t{color:#ffab70}
+  .acb-annos{border-top:2px solid #2d4a63}
+  .anno-row{display:grid;grid-template-columns:44px 1fr;border-bottom:1px solid var(--line)}
+  .anno-row:last-child{border-bottom:none}
+  .anno-num{background:#f0f4f8;border-right:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;
+    padding:12px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:var(--accent-deep);padding-top:14px}
+  .anno-txt{padding:12px 16px;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+  .anno-txt strong{color:var(--ink)}
+  .fn-box{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 36px}
+  .fn-header{background:var(--accent-deep);padding:14px 18px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .fn-name{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;color:#fff;font-weight:700}
+  .fn-lines{font-size:12px;color:#a8c8e8}
+  .fn-phase{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .fn-phase.p1{background:#b35c00;color:#fff}
+  .fn-phase.p2{background:#1a6e47;color:#fff}
+  .fn-phase.setup{background:#005eb8;color:#fff}
+  .fn-body{padding:18px}
+  .fn-body p{margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="toc">
+  <div class="toc-brand">PERSONAL BRIEFING — eggd_cnv_chr_strip CODE<br>5 July 2026</div>
+  <div class="toc-section">Orientation</div>
+  <ul>
+    <li><a href="#what">What this app does</a></li>
+    <li><a href="#flow">The strip() pattern</a></li>
+    <li><a href="#deps">Dependencies &amp; I/O</a></li>
+  </ul>
+  <div class="toc-section">Concepts</div>
+  <ul><li><a href="#concepts">Line-preserving rewrite vs. a CSV round-trip</a></li></ul>
+  <div class="toc-section">Walkthrough</div>
+  <ul>
+    <li><a href="#main">main() &amp; strip()</a></li>
+    <li><a href="#pyfn">strip_chrom() / strip_file()</a></li>
+    <li><a href="#reference">Line-by-line: strip_file()</a></li>
+  </ul>
+  <div class="meta">Source: <span class="ref">src/code.sh</span>, <span class="ref">chr_strip.py</span> in eastgenomics/eggd_cnv_chr_strip @ add-app-v0.1.0</div>
+</aside>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Code explainer · eggd_atlas_cnv workflow</div>
+  <h1>eggd_cnv_chr_strip — how the app works</h1>
+  <p class="sub">The final stage of the workflow: writes Ensembl-named (<code>1, 2, …, X, Y, MT</code>)
+  copies of the CNV call files for downstream apps, without touching the chr-prefixed originals. New code
+  (not converted from a legacy applet), with a bundled pure-Python helper.</p>
+  <div class="meta-row">
+    <span class="meta-item"><strong>Author</strong> Joo Wook Ahn</span>
+    <span class="meta-item"><strong>Date</strong> 5 July 2026</span>
+  </div>
+</header>
+
+<section id="what">
+  <h2><span class="sec-num">01</span> What this app does</h2>
+  <p>
+    Every other app in this workflow produces chromosome names in UCSC/chr-prefixed style
+    (<code>chr1</code>, <code>chrX</code>, <code>chrM</code>) because that's what the reference genome and
+    the IGV report expect. But some downstream consumers of the CNV call files — outside this workflow —
+    expect Ensembl-style names (<code>1</code>, <code>X</code>, <code>MT</code>). Rather than making every
+    upstream tool aware of two naming conventions, this app runs last and produces a second,
+    Ensembl-named copy of each CNV file, leaving the chr-prefixed originals completely untouched.
+  </p>
+  <p>Up to six files can be supplied — four from CNVkit, two from PURPLE — and each is optional; the app
+  simply skips any that weren't provided.</p>
+</section>
+
+<section id="flow">
+  <h2><span class="sec-num">02</span> The strip() pattern</h2>
+  <figure>
+    <div class="fig-wrap">
+      <svg viewBox="0 0 820 190" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="For each of six possible inputs, skip if absent, else strip the chromosome column and upload">
+        <style>.lbl{font:700 12.5px -apple-system,Segoe UI,Inter,sans-serif}.sub{font:11px -apple-system,Segoe UI,Inter,sans-serif}</style>
+        <text x="16" y="20" font-size="12" letter-spacing="2" fill="#6b7c8d">DECISION FLOW — PER INPUT (×6)</text>
+        <rect x="16" y="40" width="180" height="60" rx="8" fill="#e3edf8" stroke="#b3cce8"/>
+        <text x="28" y="65" class="lbl" fill="#003d78">Input supplied?</text>
+        <text x="28" y="84" class="sub" fill="#354656">ls ~/in/&lt;name&gt;/*</text>
+        <line x1="196" y1="55" x2="240" y2="55" stroke="#1a73c4" stroke-width="2"/>
+        <text x="200" y="48" class="sub" fill="#354656">no</text>
+        <polygon points="196,55 240,55 220,55" fill="none"/>
+        <rect x="240" y="30" width="180" height="46" rx="8" fill="#fdf0e0" stroke="#e8c28a"/>
+        <text x="252" y="58" class="lbl" fill="#b35c00">Skip (log + return 0)</text>
+        <line x1="196" y1="85" x2="240" y2="85" stroke="#1a73c4" stroke-width="2"/>
+        <text x="200" y="102" class="sub" fill="#354656">yes</text>
+        <rect x="240" y="90" width="220" height="46" rx="8" fill="#ede8f8" stroke="#c9b8ec"/>
+        <text x="252" y="118" class="lbl" fill="#4b2d8e">strip_file() rewrites chromosome col</text>
+        <line x1="460" y1="113" x2="504" y2="113" stroke="#1a73c4" stroke-width="2"/>
+        <rect x="504" y="90" width="180" height="46" rx="8" fill="#fce8ea" stroke="#e8a8b3"/>
+        <text x="516" y="118" class="lbl" fill="#9b2335">Verify output non-empty</text>
+        <line x1="684" y1="113" x2="728" y2="113" stroke="#1a73c4" stroke-width="2" marker-end="url(#a1)"/>
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1a73c4"/></marker></defs>
+        <rect x="16" y="150" width="792" height="30" rx="6" fill="#e0f0e8" stroke="#a8d4bb"/>
+        <text x="30" y="170" class="lbl" fill="#1a6e47">Upload + dx-jobutil-add-output — repeated once per supplied input, six times total</text>
+      </svg>
+    </div>
+    <figcaption>Figure 1 · The same three-step decision (present? → strip → upload) runs independently for each of the six possible inputs.</figcaption>
+  </figure>
+</section>
+
+<section id="deps">
+  <h2><span class="sec-num">03</span> Dependencies &amp; I/O</h2>
+  <table>
+    <thead><tr><th>Direction</th><th>Name</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>in</td><td><code>cnvkit_cnr</code>, <code>cnvkit_cns</code>, <code>cnvkit_call_cns</code>, <code>cnvkit_genemetrics</code></td><td>CNVkit outputs — all optional</td></tr>
+      <tr><td>in</td><td><code>purple_cnv_somatic</code>, <code>purple_cnv_gene</code></td><td>PURPLE's segment/gene CN call TSVs — all optional</td></tr>
+      <tr><td>out</td><td><code>*_nochr</code> ×6</td><td>One Ensembl-named copy per supplied input; skipped for any input not provided</td></tr>
+    </tbody>
+  </table>
+  <p>No <code>execDepends</code> beyond the system <code>python3</code> — the transform is pure text
+  processing with no external tool dependency.</p>
+</section>
+
+<section id="concepts">
+  <h2><span class="sec-num">04</span> Key concept: line-preserving rewrite vs. a CSV round-trip</h2>
+  <p>The obvious way to "change one column of a TSV" in Python is to parse every row into a list of fields
+  with <code>csv.reader</code>, modify the field, and write it back with <code>csv.writer</code>. This app
+  deliberately does not do that. Instead, <code>chr_strip.py</code> reads the file as raw lines, splits each
+  line on tabs by hand, replaces only the one field at the known column index, and rejoins with tabs — while
+  explicitly preserving each line's original terminator character.</p>
+  <div class="cb"><pre><span class="c"># the round-trip approach this app avoids:</span>
+<span class="k">import</span> csv
+rows = list(csv.reader(open(<span class="s">"in.tsv"</span>), delimiter=<span class="s">"\t"</span>))
+<span class="c"># ... modify rows[i][idx] ...</span>
+csv.writer(open(<span class="s">"out.tsv"</span>, <span class="s">"w"</span>), delimiter=<span class="s">"\t"</span>).writerows(rows)
+<span class="c"># risk: csv.writer may re-quote fields, normalise line endings, or otherwise</span>
+<span class="c"># produce output that is not byte-identical to the input except for one column</span></pre></div>
+  <div class="callout amber">
+    <span class="tag">Why the extra care matters here</span>
+    <p>These files are consumed by downstream tools with their own strict parsers. A CSV round-trip risks
+    subtly changing quoting, whitespace, or line-ending conventions in columns that were never meant to
+    change — gene names, coordinates, scores. The line-preserving approach guarantees the output is
+    byte-identical to the input <em>except</em> for the chromosome column's text, which is the only
+    documented promise this app makes.</p>
+  </div>
+</section>
+
+<section id="main">
+  <h2><span class="sec-num">05</span> Function walkthrough</h2>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Bash: dx-download-all-inputs, guard, strip() closure</span><span class="fn-lines">code.sh : 10–28</span><span class="fn-phase setup">SETUP</span></div>
+    <div class="fn-body">
+      <p><code>dx-download-all-inputs --parallel</code> is a DNAnexus SDK helper that downloads
+      <em>every</em> supplied input file at once, in parallel, to a predictable path
+      (<code>~/in/&lt;field_name&gt;/&lt;original_filename&gt;</code>) — a shortcut this app uses instead of six
+      individual <code>dx download</code> calls, since the field names and expected filenames aren't fixed
+      the way they are in, say, <code>eggd_cgp-amber</code>.</p>
+      <p>The local <code>strip()</code> bash function (taking three positional args — input field name,
+      output filename, output field name) is called six times, once per possible input, and internally
+      handles the case where that particular input wasn't supplied by checking whether
+      <code>ls ~/in/"$1"/*</code> found anything.</p>
+    </div>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Bash: strip() body</span><span class="fn-lines">code.sh : 21–28</span><span class="fn-phase p1">PER-INPUT</span></div>
+    <div class="fn-body">
+      <p>For a supplied input: calls the bundled <code>chr_strip.strip_file()</code> via a one-line
+      <code>python3 -c</code> invocation, verifies the output file is non-empty (a successful call that
+      produced zero bytes would indicate something went wrong even without raising), then uploads and
+      registers it — the same upload pattern used throughout this workflow's apps.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pyfn">
+  <h2><span class="sec-num">06</span> The two Python functions</h2>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">strip_chrom(chrom) -&gt; str</span><span class="fn-lines">chr_strip.py : 8–13</span><span class="fn-phase p1">TRANSFORM</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> convert one chromosome-name string from chr-prefixed to Ensembl style.</p>
+      <p><strong>Key logic:</strong> if the value doesn't start with <code>chr</code>, it's returned
+      unchanged — the function is <em>idempotent</em>: running it twice gives the same result as running it
+      once, which matters because it means accidentally applying the strip to an already-Ensembl file is
+      harmless rather than corrupting. Otherwise, the three-character <code>chr</code> prefix is dropped, and
+      the special case <code>chrM</code>/<code>chrMT</code> → <code>MT</code> (not <code>M</code>) is handled
+      explicitly, matching the Ensembl mitochondrial contig name.</p>
+    </div>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">strip_file(in_path, out_path, chrom_column=None) -&gt; int</span><span class="fn-lines">chr_strip.py : 25–43</span><span class="fn-phase p1">TRANSFORM</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> the line-preserving rewrite discussed in §04, applied to a whole file.
+      Returns the number of data rows actually rewritten (useful for the job log, though this app doesn't
+      currently print it).</p>
+      <p>See §07 for a full line-by-line breakdown — this is the one function in the app dense enough to
+      deserve it.</p>
+    </div>
+  </div>
+</section>
+
+<section id="reference">
+  <h2><span class="sec-num">07</span> Line-by-line: strip_file()</h2>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">chr_strip.py : 25–43</span>
+      <span class="acb-desc">Rewrite only the chromosome column, byte-identical otherwise</span>
+    </div>
+    <div class="acb-code"><pre><span class="k">def</span> <span class="f">strip_file</span>(in_path, out_path, chrom_column=<span class="k">None</span>) -&gt; int:
+    <span class="k">with</span> open(in_path, <span class="s">"r"</span>, newline=<span class="s">""</span>) <span class="k">as</span> fh:                        <span class="c"># ①</span>
+        lines = fh.read().splitlines(keepends=<span class="k">True</span>)                <span class="c"># ②</span>
+    <span class="k">if not</span> lines:
+        <span class="k">with</span> open(out_path, <span class="s">"w"</span>, newline=<span class="s">""</span>) <span class="k">as</span> fh:
+            fh.write(<span class="s">""</span>)
+        <span class="k">return</span> <span class="n">0</span>
+    idx = _chrom_index(lines[<span class="n">0</span>].rstrip(<span class="s">"\r\n"</span>).split(<span class="s">"\t"</span>), chrom_column)  <span class="c"># ③</span>
+    <span class="k">if</span> idx <span class="k">is</span> <span class="k">None</span>:
+        <span class="k">raise</span> ChrColumnError(f<span class="s">"no chromosome column in {in_path}: {lines[0]!r}"</span>)
+    out, n = [lines[<span class="n">0</span>]], <span class="n">0</span>                                     <span class="c"># ④</span>
+    <span class="k">for</span> line <span class="k">in</span> lines[<span class="n">1</span>:]:
+        body = line.rstrip(<span class="s">"\r\n"</span>)
+        term = line[len(body):]                                <span class="c"># ⑤</span>
+        fields = body.split(<span class="s">"\t"</span>)
+        <span class="k">if</span> len(fields) &gt; idx <span class="k">and</span> fields[idx]:
+            fields[idx] = strip_chrom(fields[idx])              <span class="c"># ⑥</span>
+            n += <span class="n">1</span>
+        out.append(<span class="s">"\t"</span>.join(fields) + term)
+    <span class="k">with</span> open(out_path, <span class="s">"w"</span>, newline=<span class="s">""</span>) <span class="k">as</span> fh:
+        fh.write(<span class="s">""</span>.join(out))
+    <span class="k">return</span> n</pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>newline="" disables universal-newline translation.</strong> By default, Python's text-mode file I/O silently converts <code>\r\n</code> and <code>\r</code> line endings to <code>\n</code> on read, and writes <code>\n</code> as the platform's native line ending on write — exactly the kind of "helpful" behaviour that would break the byte-for-byte guarantee this function exists to provide. <code>newline=""</code> turns that translation off on both the read and write sides.</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>splitlines(keepends=True).</strong> Unlike a plain <code>.split("\n")</code>, this splits on any of <code>\n</code>/<code>\r\n</code>/<code>\r</code> <em>and</em> keeps the terminator attached to each resulting string — so <code>lines[i]</code> already carries whatever line ending that specific line originally had, which the rest of the function relies on to reproduce it exactly.</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>Locate the column once, from the header.</strong> <code>_chrom_index</code> (not shown here — a short helper) looks for a caller-specified column name, falling back to a list of common header spellings (<code>chromosome</code>, <code>chrom</code>, <code>#chrom</code>, <code>contig</code>). This runs exactly once per file, not per row — the column position is fixed for the whole file.</div></div>
+      <div class="anno-row"><div class="anno-num">④</div><div class="anno-txt"><strong>The header line is appended to the output list completely unmodified.</strong> <code>out = [lines[0]]</code> — no split, no rejoin, no possibility of subtly altering it. Only data rows (from <code>lines[1:]</code> onward) go through the split/modify/rejoin logic below.</div></div>
+      <div class="anno-row"><div class="anno-num">⑤</div><div class="anno-txt"><strong>Splitting a line into its content and its terminator.</strong> <code>body = line.rstrip("\r\n")</code> strips whatever line ending is present; <code>term = line[len(body):]</code> then recovers exactly that ending as its own string (could be <code>"\n"</code>, <code>"\r\n"</code>, <code>"\r"</code>, or empty for a file's final line with no trailing newline at all). This pair of lines is what lets the function reattach the <em>original</em> terminator later, rather than assuming one.</div></div>
+      <div class="anno-row"><div class="anno-num">⑥</div><div class="anno-txt"><strong>The only line that actually changes data.</strong> <code>fields[idx] = strip_chrom(fields[idx])</code> replaces just the one field at the known chromosome-column index; the guard <code>len(fields) &gt; idx and fields[idx]</code> skips a short/malformed row or an empty chromosome value rather than raising, and such a row is rejoined with its other fields untouched and does not count toward <code>n</code> (the returned "rows rewritten" count).</div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+<footer>
+  Code explainer for <span class="ref">eastgenomics/eggd_cnv_chr_strip</span> (branch <span class="ref">add-app-v0.1.0</span>), part of the <span class="ref">eggd_atlas_cnv</span> somatic CNV workflow. Author: Joo Wook Ahn · 5 July 2026.
+</footer>
+</body>
+</html>
