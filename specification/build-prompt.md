@@ -131,7 +131,7 @@ hg38), never the stripped ones. **Verify:** `tests/test_chr_strip.py` passes
 The workflow has no `cnvkit_coverage` stage — `cnvkit_batch` computes its own on-target
 coverage. Do not add a second coverage stage. (The per-run PoN build computes coverage
 separately via conductor; that is a different, run-level job.) **Verify:** `dxworkflow.json`
-has exactly 9 stages and no stage named `cnvkit_coverage`.
+has exactly 7 stages and no stage named `cnvkit_coverage`.
 
 ## Starting instruction
 

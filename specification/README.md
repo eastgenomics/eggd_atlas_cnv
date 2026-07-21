@@ -15,7 +15,7 @@ one locked, versioned, per-sample workflow composed entirely of **DNAnexus apps*
 
 Given a chr-prefixed tumour BAM and matching BAI (produced by a separately-run
 `eggd_chr_prefix`), a sample ID, and PoN configuration, the workflow runs (AMBER+COBALT
-are parallel stages, so there are eight DNAnexus app stages: `amber`, `cobalt`, `sage`,
+are parallel stages, so there are seven DNAnexus app stages: `amber`, `cobalt`, `sage`,
 `purple`, `cnvkit_batch`, `cnv_chr_strip`, `purple_plotter` — see DESIGN §3):
 
 1. Runs **AMBER** (BAF per germline site) and **COBALT** (read-depth ratios) in parallel.
@@ -137,7 +137,7 @@ The PoN choice is a **config decision, not a workflow branch**:
 | Use case | Conductor topology |
 |---|---|
 | **PoN provided** | Per-sample `eggd_atlas_cnv` only; `cnvkit_cn_reference` is a static `$dnanexus_link {project,id}`. |
-| **PoN built** | `eggd_chr_prefix` (per-sample) → `eggd_cgp-cnvkit-coverage` (per-sample, parallel) → `eggd_cgp-cnvkit-pon` (per-run, `depends_on` + `hold`, gathers the coverage array with an **include** `inputs_filter` matching real specimen IDs) → `eggd_atlas_cnv` (per-sample, `cnvkit_cn_reference` ← the per-run `cn_reference`; stage 0 passes the already-prefixed BAM through). |
+| **PoN built** | `eggd_chr_prefix` (per-sample) → `eggd_cgp-cnvkit-coverage` (per-sample, parallel) → `eggd_cgp-cnvkit-pon` (per-run, `depends_on` + `hold`, gathers the coverage array with an **include** `inputs_filter` matching real specimen IDs) → `eggd_atlas_cnv` (per-sample, `cnvkit_cn_reference` ← the per-run `cn_reference`; `input_bam`/`input_bai` ← the same per-sample `chr_prefix` analysis). |
 
 See `conductor/atlas_cnv_pon_{provided,built}.example.json` and REFERENCE §4.
 

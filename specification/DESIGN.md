@@ -424,7 +424,7 @@ tests gated on real credentials (hand to a human).
 | `ploidy_gate.decide` | none (pure) | NONE/STATIC/CONDITIONAL modes; mutual-exclusion error; `needs_rerun` boundary at threshold |
 | `purity.read_purity_ploidy` | golden `purity.tsv` fixture | correct purity/ploidy/status/sex; `ploidy_int` rounding; parse errors (incl. NaN) |
 | `chr_strip.strip_chrom` / `strip_file` | in-memory TSV fixtures | `chr1→1`, `chrM→MT`, idempotent; only the `chromosome` column changed (gene names untouched); header-only in→out; `ChrColumnError` when no chromosome column |
-| `dxworkflow.json` | the built JSON | every `outputField` link references a real upstream app output (class-checked); downstream BAMs come from `chr_prefix`; CNV `*_nochr` outputs come from `cnv_chr_strip`; 9 stages present |
+| `dxworkflow.json` | the built JSON | every `outputField` link references a real upstream app output (class-checked); downstream BAMs are chr-prefixed workflow inputs (`input_bam`/`input_bai`), not a `chr_prefix` stage; CNV `*_nochr` outputs come from `cnv_chr_strip`; 7 stages present |
 | `conductor` executables block | the example JSON | per-run `pon` step `depends_on` the coverage step; `atlas` step links `cnvkit_cn_reference` from the pon analysis |
 
 **Acceptance criteria for v0.1:**
@@ -438,12 +438,12 @@ tests gated on real credentials (hand to a human).
       `cnv_somatic_tsv` + `cnv_gene_tsv` as standalone CN-call file outputs.
 - [ ] `dxworkflow.json` declares an `outputs` block promoting `igv_html`, both PURPLE CNV
       TSVs and both CNVkit CN-call files **in their `*_nochr` form** (from `cnv_chr_strip`),
-      `qc_report`, `purity`, `ploidy`.
+      `purity`, `ploidy`.
 - [ ] `eggd_cnv_chr_strip` writes `*.nochr.*` copies (chromosome column only, `chrM→MT`)
       and leaves the chr-prefixed originals untouched.
-- [ ] The `dxworkflow.json` has **9 stages** (chr_prefix, amber, cobalt, sage, purple, qc_flags,
-      cnvkit_batch, cnv_chr_strip, purple_plotter) with `cnvkit_cn_reference` as a required
-      workflow input.
+- [ ] The `dxworkflow.json` has **7 stages** (amber, cobalt, sage, purple,
+      cnvkit_batch, cnv_chr_strip, purple_plotter) with `cnvkit_cn_reference`,
+      `input_bam` and `input_bai` as required workflow inputs.
 - [ ] `dxworkflow.json` validates and links purity/ploidy scalars into CNVkit batch.
 - [ ] E2E run on one sample produces a non-empty `igv_html`.
 
