@@ -7,7 +7,6 @@ cd "$(dirname "$0")/.."
 
 # Apps in dependency order (converted + new first, then reused, plotter last).
 APPS=(
-  eggd_chr_prefix
   eggd_cgp-amber
   eggd_cgp-cobalt
   eggd_cgp-sage

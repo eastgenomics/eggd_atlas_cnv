@@ -15,6 +15,7 @@ def test_provided_atlas_uses_workflow_input_cn_reference():
     assert "cnvkit_cn_reference" in atlas["inputs"]          # workflow-level input name
     assert "stage-cnvkit_batch.cn_reference" not in atlas["inputs"]  # never stage-qualified
     assert "sample_id" in atlas["inputs"]                    # required input present
+    assert "input_bai" in atlas["inputs"]                    # separately supplied chr-prefixed BAI
 
 
 def test_built_pon_step_is_per_run_and_holds():
@@ -45,5 +46,7 @@ def test_built_atlas_links_cn_reference_from_pon_analysis():
     pon = _by_name(BUILT, "eggd_cgp-cnvkit-pon")
     assert atlas["per_sample"] is True and pon["analysis"] in atlas["depends_on"]
     assert "sample_id" in atlas["inputs"]
+    assert atlas["inputs"]["input_bam"]["$dnanexus_link"]["analysis"] == "analysis_1"
+    assert atlas["inputs"]["input_bai"]["$dnanexus_link"]["analysis"] == "analysis_1"
     found = json.dumps(atlas["inputs"])
     assert f'"{pon["analysis"]}"' in found and '"cn_reference"' in found

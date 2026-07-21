@@ -49,6 +49,7 @@
       "depends_on": ["analysis_3"],
       "inputs": {
         "input_bam": {"$dnanexus_link": {"analysis": "analysis_1", "field": "output_bam"}},
+        "input_bai": {"$dnanexus_link": {"analysis": "analysis_1", "field": "output_bai"}},
         "sample_id": "INPUT-SAMPLE-NAME",
         "cnvkit_cn_reference": {"$dnanexus_link": {"analysis": "analysis_3", "field": "cn_reference"}},
         "ploidy_cap_purity_threshold": 0.35
