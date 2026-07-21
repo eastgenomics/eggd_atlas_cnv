@@ -23,11 +23,8 @@ DNAnexus apps**. Four requirements drive the design beyond a straight merge:
 3. **Flexible CNVkit reference.** CNVkit must either use a supplied PoN `.cnn` or build
    a fresh one from the run's samples — chosen at the **run** level, without rebuilding
    the PoN once per sample.
-4. **chr-prefixing folded in as stage 0.** `eggd_chr_prefix` is used only by this
-   pipeline, so it becomes the workflow's first stage rather than an upstream
-   prerequisite. It is adapted for single-file, per-sample use (single-file I/O +
-   passthrough when the BAM is already prefixed) so every downstream tool receives a
-   chr-prefixed GRCh38 BAM regardless of the input naming.
+4. **chr-prefixing is an upstream prerequisite.** `eggd_chr_prefix` runs separately;
+   this workflow receives its chr-prefixed BAM and matching BAI as inputs.
 5. **chr-stripping the CNV text outputs for downstream apps.** Downstream tools expect
    Ensembl chromosome names (`1..22,X,Y,MT`), but PURPLE/CNVkit emit chr-prefixed CNV
    files. A dedicated final stage (`eggd_cnv_chr_strip`) writes `*.nochr.*` copies of the
@@ -126,25 +123,21 @@ and [Introduction to Building Workflows](https://documentation.dnanexus.com/deve
 
 ```mermaid
 flowchart TD
-    IN["workflow inputs:<br/>input_bam, sample_id,<br/>max_ploidy?, ploidy_cap_purity_threshold?,<br/>cnvkit_cn_reference (PoN, from conductor)"]
+    IN["workflow inputs:<br/>input_bam + input_bai (chr-prefixed), sample_id,<br/>max_ploidy?, ploidy_cap_purity_threshold?,<br/>cnvkit_cn_reference (PoN, from conductor)"]
 
-    IN -->|input_bam| CHR["eggd_chr_prefix (stage 0)<br/>add chr, index, passthrough if already chr"]
-
-    CHR -->|"output_bam + output_bai"| AMBER["eggd_cgp-amber"]
-    CHR -->|"output_bam + output_bai"| COBALT["eggd_cgp-cobalt"]
-    CHR -->|"output_bam + output_bai"| SAGE["eggd_cgp-sage"]
-    CHR -->|"output_bam + output_bai"| BATCH["eggd_cgp-cnvkit-batch<br/>(computes its own coverage)"]
+    IN -->|input_bam + input_bai| AMBER["eggd_cgp-amber"]
+    IN -->|input_bam + input_bai| COBALT["eggd_cgp-cobalt"]
+    IN -->|input_bam + input_bai| SAGE["eggd_cgp-sage"]
+    IN -->|input_bam + input_bai| BATCH["eggd_cgp-cnvkit-batch<br/>(computes its own coverage)"]
 
     AMBER -->|amber_tar| PURPLE["eggd_cgp-purple<br/>(two-pass ploidy cap)"]
     COBALT -->|cobalt_tar| PURPLE
     SAGE -->|somatic_vcf| PURPLE
 
-    PURPLE -->|"purity_tsv, purity_range_tsv"| QC["eggd_cgp-qc-flags"]
     PURPLE -->|"purity (float), ploidy (int), sample_sex"| BATCH
     IN -->|cnvkit_cn_reference| BATCH
 
     PURPLE -->|purple_tar| PLOT["eggd_purple_plotter"]
-    QC -->|qc_report| PLOT
     BATCH -->|"cnr, call.cns, genemetrics"| PLOT
 
     BATCH -->|"cnr, cns, call.cns, genemetrics"| STRIP["eggd_cnv_chr_strip<br/>(chr to Ensembl, retains originals)"]
@@ -154,8 +147,8 @@ flowchart TD
     STRIP -->|"nochr CNV files"| OUT2["nochr CNV outputs (downstream)"]
 ```
 
-Stage 0 (`eggd_chr_prefix`) adds the `chr` prefix and produces the indexed BAM that AMBER,
-COBALT, SAGE and CNVkit-batch all consume. Those four fan out in parallel. PURPLE waits
+The separately-run `eggd_chr_prefix` produces the chr-prefixed BAM and BAI that are supplied
+as workflow inputs to AMBER, COBALT, SAGE and CNVkit-batch. Those four fan out in parallel. PURPLE waits
 for AMBER+COBALT+SAGE. CNVkit-batch waits for PURPLE's scalar purity/ploidy. The plotter
 (chr-prefixed inputs, for igv.js/hg38) and `eggd_cnv_chr_strip` (Ensembl-named copies for
 downstream) are the two terminal joins. The PoN (`cnvkit_cn_reference`) enters as a plain
@@ -173,7 +166,6 @@ names; the chr-prefixed originals stay reachable as stage outputs. The promoted 
 | Workflow output | Class | Linked stage output | Meaning |
 |---|---|---|---|
 | `igv_html` | file | purple_plotter.igv_html | **primary deliverable** — combined IGV viewer |
-| `qc_report` | file | qc_flags.qc_report | purity/ploidy/flags summary TSV |
 | `purple_cnv_somatic_nochr` | file | cnv_chr_strip.purple_cnv_somatic_nochr | PURPLE segment-level CN calls (Ensembl-named) |
 | `purple_cnv_gene_nochr` | file | cnv_chr_strip.purple_cnv_gene_nochr | PURPLE gene-level CN calls (Ensembl-named) |
 | `cnvkit_call_cns_nochr` | file | cnv_chr_strip.cnvkit_call_cns_nochr | CNVkit integer CN calls (Ensembl-named) |
@@ -193,20 +185,19 @@ as intermediates.
 
 Apps are grouped as **converted** (was an applet), **new**, and **reused** (already an app).
 
-### 4.0 `eggd_chr_prefix` (folded in, adapted) — stage 0
+### 4.0 `eggd_chr_prefix` (external prerequisite)
 
-- Responsible for: adding the `chr` prefix to the input BAM header (`samtools reheader`),
-  generating the `.bai`, and emitting **exactly one** BAM + index for the sample.
-- Adapted from the public `eggd_chr_prefix` (array-in/array-out, `add_chr`/`remove_chr`)
-  for single-file per-sample use inside the workflow. Required modifications:
+This app is not a stage or source directory in this repository. It runs before the workflow,
+adding the `chr` prefix to the BAM header (`samtools reheader`) and generating the matching
+BAI. Its single-file outputs are supplied as `input_bam` and `input_bai`. Its required behaviour is:
   1. **Single-file I/O.** Input `input_bam` (file); outputs `output_bam` (file) and
      `output_bai` (file). The array inputs/outputs of the public app are not used, so a
-     stage output can link directly into a single-file downstream input.
+     output can be supplied directly to the workflow's single-file inputs.
   2. **Passthrough when already prefixed.** The public app emits *nothing* when the BAM
-     is already in the target format; that would starve downstream stages. The folded-in
+     is already in the target format; that would starve downstream consumers. The external
      app must instead emit the input BAM (with a generated/copied `.bai`) unchanged. This
      makes the workflow robust to both Ensembl-named and already-chr-prefixed inputs.
-  3. **Mode fixed to `add_chr`.** Not exposed as a workflow input.
+  3. **Mode fixed to `add_chr`.**
 - Must NOT alter read data — header reheader only. Must NOT require the input to be indexed.
 - Public interface: `input_bam` (file) → `output_bam` (file), `output_bai` (file).
 

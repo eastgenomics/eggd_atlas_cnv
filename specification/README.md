@@ -1,8 +1,7 @@
 # eggd_atlas_cnv — per-sample somatic CNV workflow (PURPLE + CNVkit + IGV)
 
-`eggd_atlas_cnv` is a DNAnexus **workflow** that takes one tumour BAM and produces a
-combined somatic copy-number call set: it adds the `chr` prefix (stage 0), then produces
-a genome-wide PURPLE profile (purity/ploidy-fitted, with an optional ploidy cap), a focal
+`eggd_atlas_cnv` is a DNAnexus **workflow** that takes a chr-prefixed tumour BAM and its
+BAI index and produces a combined somatic copy-number call set: it produces a genome-wide PURPLE profile (purity/ploidy-fitted, with an optional ploidy cap), a focal
 gene-level CNVkit profile (using either a supplied panel-of-normals or one built once per
 run by eggd_conductor outside the workflow), and a single IGV.js HTML report that overlays
 both (igv.js loads from a CDN at view time — not fully offline).
@@ -14,28 +13,23 @@ one locked, versioned, per-sample workflow composed entirely of **DNAnexus apps*
 
 ## What this workflow does
 
-Given one tumour BAM (typically Ensembl/`1..22,X,Y,MT`-named), a sample ID, and PoN
-configuration, the workflow runs (this is an operational summary; AMBER+COBALT are two
-parallel stages, so the nine DNAnexus app stages are `chr_prefix`, `amber`, `cobalt`,
-`sage`, `purple`, `qc_flags`, `cnvkit_batch`, `cnv_chr_strip`, `purple_plotter` — see
-DESIGN §3):
+Given a chr-prefixed tumour BAM and matching BAI (produced by a separately-run
+`eggd_chr_prefix`), a sample ID, and PoN configuration, the workflow runs (AMBER+COBALT
+are parallel stages, so there are eight DNAnexus app stages: `amber`, `cobalt`, `sage`,
+`purple`, `cnvkit_batch`, `cnv_chr_strip`, `purple_plotter` — see DESIGN §3):
 
-0. Runs **eggd_chr_prefix** (stage 0) to add the `chr` prefix to the BAM header and
-   generate its index — producing the chr-prefixed GRCh38 BAM every downstream tool needs.
 1. Runs **AMBER** (BAF per germline site) and **COBALT** (read-depth ratios) in parallel.
 2. Runs **SAGE** to produce a somatic SNV/indel VCF (panel mode).
 3. Runs **PURPLE** to fit purity, ploidy, and genome-wide copy-number segments —
    applying a **maximum-ploidy cap** when requested, either as a hard cap
    (`max_ploidy`) or conditionally on a purity threshold (e.g. cap ploidy at 2 when
    fitted purity < 0.35). PURPLE emits purity and ploidy as scalar job outputs.
-4. Runs **QC-flags** to derive a structured QC report (purity, ploidy, status, WGD,
-   best-fit recovery for `NO_TUMOR`).
-5. Runs **CNVkit batch** (coverage → fix → segment → call → plot → genemetrics)
+4. Runs **CNVkit batch** (coverage → fix → segment → call → plot → genemetrics)
    against a supplied panel-of-normals (`cnvkit_cn_reference`), feeding PURPLE's purity
    and ploidy into integer CN calling.
-6. Runs **eggd_purple_plotter** to overlay PURPLE + AMBER + CNVkit into one
+5. Runs **eggd_purple_plotter** to overlay PURPLE + AMBER + CNVkit into one
    IGV.js HTML report (igv.js loads from a CDN at view time — not fully offline).
-7. Runs **eggd_cnv_chr_strip** to write Ensembl-named (`*.nochr.*`) copies of the CNV call
+6. Runs **eggd_cnv_chr_strip** to write Ensembl-named (`*.nochr.*`) copies of the CNV call
    files for downstream apps, **retaining the chr-prefixed originals**.
 
 The panel-of-normals is **an input to the workflow, never built inside it**. When a run
@@ -67,9 +61,6 @@ Read in this order:
 eggd_atlas_cnv/
 ├── dxworkflow.json                 ← the locked workflow (built with dx build)
 ├── apps/                           ← app sources built by scripts/build_all.sh
-│   ├── eggd_chr_prefix/            ← stage 0 app (folded in; single-file I/O + passthrough)
-│   │   ├── dxapp.json
-│   │   └── src/code.sh
 │   ├── eggd_cgp-amber/             ← AMBER app (converted from applet)
 │   │   ├── dxapp.json
 │   │   └── src/code.sh

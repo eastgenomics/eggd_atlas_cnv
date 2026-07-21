@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate dxworkflow.json for eggd_atlas_cnv (9 stages). Run from repo root.
+"""Generate dxworkflow.json for eggd_atlas_cnv (7 stages). Run from repo root.
 Fixed reference file IDs are from REFERENCE.md §2."""
 import json
 import os
@@ -8,8 +8,8 @@ PROJ_REF = "project-Fkb6Gkj433GVVvj73J7x8KbV"  # canonical reference project
 
 # Stage executables. Prefer exact app IDs from scripts/app_ids.json (built this session)
 # because by-name resolution (app-<name>) resolves to any PUBLISHED app of that name,
-# which for eggd_chr_prefix and the reused cnvkit apps shadows our dev builds with a
-# different interface. Fall back to app-<name> if the map is absent.
+# which for the reused cnvkit apps can shadow our dev builds with a different interface.
+# Fall back to app-<name> if the map is absent.
 _IDS_PATH = os.path.join(os.path.dirname(__file__), "app_ids.json")
 APP_ID = json.load(open(_IDS_PATH)) if os.path.exists(_IDS_PATH) else {}
 
@@ -61,19 +61,11 @@ def stg(stage, field):  # stage output link (JBOR)
 
 stages = [
     {
-        "id": "chr_prefix",
-        "executable": execu("eggd_chr_prefix"),
-        "input": {
-            "input_bam": wf("input_bam"),
-            "mode": "add_chr",
-        },
-    },
-    {
         "id": "amber",
         "executable": execu("eggd_cgp-amber"),
         "input": {
-            "tumour_bam": stg("chr_prefix", "output_bam"),
-            "tumour_bai": stg("chr_prefix", "output_bai"),
+            "tumour_bam": wf("input_bam"),
+            "tumour_bai": wf("input_bai"),
             "sample_id": wf("sample_id"),
             "amber_jar": link_file("AMBER_JAR"),
             "germline_sites": link_file("GERMLINE_SITES"),
@@ -83,8 +75,8 @@ stages = [
         "id": "cobalt",
         "executable": execu("eggd_cgp-cobalt"),
         "input": {
-            "tumour_bam": stg("chr_prefix", "output_bam"),
-            "tumour_bai": stg("chr_prefix", "output_bai"),
+            "tumour_bam": wf("input_bam"),
+            "tumour_bai": wf("input_bai"),
             "sample_id": wf("sample_id"),
             "cobalt_jar": link_file("COBALT_JAR"),
             "norm_file": link_file("NORM_FILE"),
@@ -98,8 +90,8 @@ stages = [
         "id": "sage",
         "executable": execu("eggd_cgp-sage"),
         "input": {
-            "tumour_bam": stg("chr_prefix", "output_bam"),
-            "tumour_bai": stg("chr_prefix", "output_bai"),
+            "tumour_bam": wf("input_bam"),
+            "tumour_bai": wf("input_bai"),
             "sample_id": wf("sample_id"),
             "sage_jar": link_file("SAGE_JAR"),
             "ref_fasta": link_file("SAGE_REF_FASTA"),
@@ -133,38 +125,17 @@ stages = [
         },
     },
     {
-        "id": "qc_flags",
-        "executable": execu("eggd_cgp-qc-flags"),
-        "input": {
-            "sample_id": wf("sample_id"),
-            "purity_tsv": stg("purple", "purity_tsv"),
-            "purity_range_tsv": stg("purple", "purity_range_tsv"),
-        },
-    },
-    {
         "id": "cnvkit_batch",
         "executable": execu("eggd_cgp-cnvkit-batch"),
         "input": {
-            "tumour_bam": stg("chr_prefix", "output_bam"),
-            "tumour_bai": stg("chr_prefix", "output_bai"),
+            "tumour_bam": wf("input_bam"),
+            "tumour_bai": wf("input_bai"),
             "sample_id": wf("sample_id"),
             "cn_reference": wf("cnvkit_cn_reference"),
             "baits": link_file("CNVKIT_BED"),
             "purity": stg("purple", "purity"),
             "ploidy": stg("purple", "ploidy"),
             "sample_sex": stg("purple", "sample_sex"),
-        },
-    },
-    {
-        "id": "purple_plotter",
-        "executable": execu("eggd_purple_plotter"),
-        "input": {
-            "sample_id": wf("sample_id"),
-            "purple_tar": stg("purple", "purple_tar"),
-            "qc_report": stg("qc_flags", "qc_report"),
-            "cnvkit_cnr": stg("cnvkit_batch", "copy_ratios"),
-            "cnvkit_call_cns": stg("cnvkit_batch", "call_segments"),
-            "cnvkit_genemetrics": stg("cnvkit_batch", "genemetrics"),
         },
     },
     {
@@ -180,10 +151,23 @@ stages = [
             "purple_cnv_gene": stg("purple", "cnv_gene_tsv"),
         },
     },
+    {
+        "id": "purple_plotter",
+        "executable": execu("eggd_purple_plotter"),
+        "input": {
+            "sample_id": wf("sample_id"),
+            "purple_tar": stg("purple", "purple_tar"),
+            "cnvkit_cnr": stg("cnvkit_batch", "copy_ratios"),
+            "cnvkit_call_cns": stg("cnvkit_batch", "call_segments"),
+            "cnvkit_genemetrics": stg("cnvkit_batch", "genemetrics"),
+        },
+    },
 ]
 
 inputs = [
+    # These are chr-prefixed BAM/BAI outputs of the separately-run eggd_chr_prefix app.
     {"name": "input_bam", "class": "file"},
+    {"name": "input_bai", "class": "file"},
     {"name": "sample_id", "class": "string"},
     {"name": "cnvkit_cn_reference", "class": "file"},
     {"name": "max_ploidy", "class": "int", "optional": True},
@@ -198,7 +182,6 @@ def out(name, cls, stage, field):
 
 outputs = [
     out("igv_html", "file", "purple_plotter", "igv_html"),
-    out("qc_report", "file", "qc_flags", "qc_report"),
     out("purple_cnv_somatic_nochr", "file", "cnv_chr_strip", "purple_cnv_somatic_nochr"),
     out("purple_cnv_gene_nochr", "file", "cnv_chr_strip", "purple_cnv_gene_nochr"),
     out("cnvkit_call_cns_nochr", "file", "cnv_chr_strip", "cnvkit_call_cns_nochr"),
@@ -212,7 +195,7 @@ outputs = [
 workflow = {
     "name": "eggd_atlas_cnv",
     "title": "eggd_atlas_cnv",
-    "summary": "Per-sample somatic CNV workflow: chr-prefix, AMBER+COBALT+SAGE -> PURPLE -> QC-flags, CNVkit batch, IGV plotter, chr-strip",
+    "summary": "Per-sample somatic CNV workflow: chr-prefixed BAM/BAI, AMBER+COBALT+SAGE -> PURPLE, CNVkit batch, IGV plotter, chr-strip",
     "dxapi": "1.0.0",
     "version": "0.1.0",
     "inputs": inputs,

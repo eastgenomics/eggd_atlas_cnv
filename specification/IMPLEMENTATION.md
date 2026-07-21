@@ -21,7 +21,7 @@ to a human operator (marked ⚠️ DNAnexus).
 eggd_atlas_cnv/
 ├── pyproject.toml
 ├── atlas_helpers/{__init__.py, ploidy_gate.py, purity.py, chr_strip.py}
-├── apps/…                       (populated M3–M8; incl. eggd_chr_prefix stage 0)
+├── apps/…                       (populated M3–M8; chr-prefix runs separately)
 ├── dxworkflow.json              (M9)
 ├── conductor/atlas_cnv_pon_{provided,built}.example.json   (M10)
 ├── scripts/{resource_ids.env.template, build_all.sh, run_e2e.sh}
@@ -56,8 +56,8 @@ packages = ["atlas_helpers"]
 | M5 ⚠️ | `eggd_cgp-sage` app | (build/smoke) | builds; smoke produces `somatic_vcf` |
 | M6 ⚠️ | `eggd_cgp-purple` app (+ bundled `ploidy_gate.py`) | test_ploidy_gate (M2) + smoke | builds; conditional re-run works; emits scalar `purity`/`ploidy`/`sample_sex` + `cnv_somatic_tsv`/`cnv_gene_tsv` |
 | M7 ⚠️ | `eggd_cgp-qc-flags` app | (build/smoke) | builds; produces `qc_report` |
-| M8 ⚠️ | fold in stage-0 `eggd_chr_prefix`; build `eggd_cnv_chr_strip` (+ bundled `chr_strip.py`); rebuild coverage/pon/batch/plotter | test_chr_strip (M2) + smoke | chr_prefix single-file + passthrough; strip writes `*.nochr.*` retaining originals; six apps build; plotter accepts `.tsv` genemetrics |
-| M9 | `dxworkflow.json` (9 stages) | test_workflow_json | JSON valid; links resolve; downstream BAMs from chr_prefix; CNV `*_nochr` outputs from cnv_chr_strip; scalar links + `outputs` block present |
+| M8 ⚠️ | build `eggd_cnv_chr_strip` (+ bundled `chr_strip.py`); rebuild coverage/pon/batch/plotter | test_chr_strip (M2) + smoke | strip writes `*.nochr.*` retaining originals; five apps build; plotter accepts `.tsv` genemetrics |
+| M9 | `dxworkflow.json` (8 stages) | test_workflow_json | JSON valid; links resolve; chr-prefixed BAM/BAI are workflow inputs; CNV `*_nochr` outputs from cnv_chr_strip; scalar links + `outputs` block present |
 | M10 | `conductor/atlas_cnv_pon_{provided,built}.example.json` | test_conductor_config | both topologies valid; sample_id present; include-filter; links resolve |
 | M11 ⚠️ | end-to-end | `scripts/run_e2e.sh` | one sample → non-empty `igv_html` |
 

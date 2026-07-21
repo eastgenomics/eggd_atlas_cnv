@@ -1,12 +1,16 @@
 {
   "name": "eggd_atlas_cnv",
   "title": "eggd_atlas_cnv",
-  "summary": "Per-sample somatic CNV workflow: chr-prefix, AMBER+COBALT+SAGE -> PURPLE -> QC-flags, CNVkit batch, IGV plotter, chr-strip",
+  "summary": "Per-sample somatic CNV workflow: chr-prefixed BAM/BAI, AMBER+COBALT+SAGE -> PURPLE, CNVkit batch, IGV plotter, chr-strip",
   "dxapi": "1.0.0",
   "version": "0.1.0",
   "inputs": [
     {
       "name": "input_bam",
+      "class": "file"
+    },
+    {
+      "name": "input_bai",
       "class": "file"
     },
     {
@@ -42,16 +46,6 @@
         "$dnanexus_link": {
           "stage": "purple_plotter",
           "outputField": "igv_html"
-        }
-      }
-    },
-    {
-      "name": "qc_report",
-      "class": "file",
-      "outputSource": {
-        "$dnanexus_link": {
-          "stage": "qc_flags",
-          "outputField": "qc_report"
         }
       }
     },
@@ -138,31 +132,17 @@
   ],
   "stages": [
     {
-      "id": "chr_prefix",
-      "executable": "app-J94gKf84GXQVGZ8yPJY2jbj6",
-      "input": {
-        "input_bam": {
-          "$dnanexus_link": {
-            "workflowInputField": "input_bam"
-          }
-        },
-        "mode": "add_chr"
-      }
-    },
-    {
       "id": "amber",
       "executable": "app-J94gKv0470272kQpP95K27yy",
       "input": {
         "tumour_bam": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bam"
+            "workflowInputField": "input_bam"
           }
         },
         "tumour_bai": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bai"
+            "workflowInputField": "input_bai"
           }
         },
         "sample_id": {
@@ -184,14 +164,12 @@
       "input": {
         "tumour_bam": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bam"
+            "workflowInputField": "input_bam"
           }
         },
         "tumour_bai": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bai"
+            "workflowInputField": "input_bai"
           }
         },
         "sample_id": {
@@ -228,14 +206,12 @@
       "input": {
         "tumour_bam": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bam"
+            "workflowInputField": "input_bam"
           }
         },
         "tumour_bai": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bai"
+            "workflowInputField": "input_bai"
           }
         },
         "sample_id": {
@@ -341,42 +317,17 @@
       }
     },
     {
-      "id": "qc_flags",
-      "executable": "app-J94gKz04BGPgx4vkByKgB285",
-      "input": {
-        "sample_id": {
-          "$dnanexus_link": {
-            "workflowInputField": "sample_id"
-          }
-        },
-        "purity_tsv": {
-          "$dnanexus_link": {
-            "stage": "purple",
-            "outputField": "purity_tsv"
-          }
-        },
-        "purity_range_tsv": {
-          "$dnanexus_link": {
-            "stage": "purple",
-            "outputField": "purity_range_tsv"
-          }
-        }
-      }
-    },
-    {
       "id": "cnvkit_batch",
       "executable": "app-J94gP7Q4Qx94qQ6K29XFKzBP",
       "input": {
         "tumour_bam": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bam"
+            "workflowInputField": "input_bam"
           }
         },
         "tumour_bai": {
           "$dnanexus_link": {
-            "stage": "chr_prefix",
-            "outputField": "output_bai"
+            "workflowInputField": "input_bai"
           }
         },
         "sample_id": {
@@ -408,47 +359,6 @@
           "$dnanexus_link": {
             "stage": "purple",
             "outputField": "sample_sex"
-          }
-        }
-      }
-    },
-    {
-      "id": "purple_plotter",
-      "executable": "app-J94gP9j4yvZQ91G1QG801XQ6",
-      "input": {
-        "sample_id": {
-          "$dnanexus_link": {
-            "workflowInputField": "sample_id"
-          }
-        },
-        "purple_tar": {
-          "$dnanexus_link": {
-            "stage": "purple",
-            "outputField": "purple_tar"
-          }
-        },
-        "qc_report": {
-          "$dnanexus_link": {
-            "stage": "qc_flags",
-            "outputField": "qc_report"
-          }
-        },
-        "cnvkit_cnr": {
-          "$dnanexus_link": {
-            "stage": "cnvkit_batch",
-            "outputField": "copy_ratios"
-          }
-        },
-        "cnvkit_call_cns": {
-          "$dnanexus_link": {
-            "stage": "cnvkit_batch",
-            "outputField": "call_segments"
-          }
-        },
-        "cnvkit_genemetrics": {
-          "$dnanexus_link": {
-            "stage": "cnvkit_batch",
-            "outputField": "genemetrics"
           }
         }
       }
@@ -496,6 +406,41 @@
           "$dnanexus_link": {
             "stage": "purple",
             "outputField": "cnv_gene_tsv"
+          }
+        }
+      }
+    },
+    {
+      "id": "purple_plotter",
+      "executable": "app-J94gP9j4yvZQ91G1QG801XQ6",
+      "input": {
+        "sample_id": {
+          "$dnanexus_link": {
+            "workflowInputField": "sample_id"
+          }
+        },
+        "purple_tar": {
+          "$dnanexus_link": {
+            "stage": "purple",
+            "outputField": "purple_tar"
+          }
+        },
+        "cnvkit_cnr": {
+          "$dnanexus_link": {
+            "stage": "cnvkit_batch",
+            "outputField": "copy_ratios"
+          }
+        },
+        "cnvkit_call_cns": {
+          "$dnanexus_link": {
+            "stage": "cnvkit_batch",
+            "outputField": "call_segments"
+          }
+        },
+        "cnvkit_genemetrics": {
+          "$dnanexus_link": {
+            "stage": "cnvkit_batch",
+            "outputField": "genemetrics"
           }
         }
       }

@@ -5,10 +5,10 @@ WF = json.loads(Path("dxworkflow.json").read_text())
 STAGE_IDS = {s["id"] for s in WF["stages"]}
 
 
-def test_nine_stages():
-    assert STAGE_IDS == {"chr_prefix", "amber", "cobalt", "sage", "purple", "qc_flags",
-                         "cnvkit_batch", "cnv_chr_strip", "purple_plotter"}
-    assert len(WF["stages"]) == 9
+def test_seven_stages():
+    assert STAGE_IDS == {"amber", "cobalt", "sage", "purple", "cnvkit_batch",
+                         "cnv_chr_strip", "purple_plotter"}
+    assert len(WF["stages"]) == 7
 
 
 def _links(stage_input):
@@ -24,12 +24,12 @@ def test_all_stage_links_reference_existing_stages():
             assert src in STAGE_IDS, f"{s['id']} links unknown stage {src}"
 
 
-def test_downstream_bams_come_from_chr_prefix():
-    # amber/cobalt/sage/cnvkit_batch must take tumour_bam/bai from the chr_prefix stage
+def test_downstream_bams_come_from_workflow_inputs():
+    # eggd_chr_prefix runs separately; all BAM-consuming stages take its outputs as inputs.
     for sid in ("amber", "cobalt", "sage", "cnvkit_batch"):
         st = next(s for s in WF["stages"] if s["id"] == sid)
-        assert st["input"]["tumour_bam"]["$dnanexus_link"] == {"stage": "chr_prefix", "outputField": "output_bam"}, sid
-        assert st["input"]["tumour_bai"]["$dnanexus_link"] == {"stage": "chr_prefix", "outputField": "output_bai"}, sid
+        assert st["input"]["tumour_bam"]["$dnanexus_link"] == {"workflowInputField": "input_bam"}, sid
+        assert st["input"]["tumour_bai"]["$dnanexus_link"] == {"workflowInputField": "input_bai"}, sid
 
 
 def test_purity_ploidy_scalars_linked_into_batch():
@@ -48,7 +48,8 @@ def test_plotter_consumes_chr_prefixed_files_not_stripped():
     # igv.js/hg38 needs chr names: plotter must read cnvkit_batch/purple, never cnv_chr_strip
     plot = next(s for s in WF["stages"] if s["id"] == "purple_plotter")
     srcs = {src for src, _ in _links(plot["input"])}
-    assert {"purple", "qc_flags", "cnvkit_batch"} <= srcs
+    assert {"purple", "cnvkit_batch"} <= srcs
+    assert "qc_flags" not in srcs
     assert "cnv_chr_strip" not in srcs
 
 
@@ -63,7 +64,7 @@ def test_declared_workflow_outputs():
     # CNV call files are promoted in their chr-stripped form (from cnv_chr_strip)
     for name in ("igv_html", "purple_cnv_somatic_nochr", "purple_cnv_gene_nochr",
                  "cnvkit_call_cns_nochr", "cnvkit_genemetrics_nochr", "cnvkit_cnr_nochr",
-                 "qc_report", "purple_tar", "purity", "ploidy"):
+                 "purple_tar", "purity", "ploidy"):
         assert name in outs, f"missing workflow output {name}"
     assert outs["purple_cnv_somatic_nochr"]["stage"] == "cnv_chr_strip"
     assert outs["cnvkit_call_cns_nochr"]["stage"] == "cnv_chr_strip"
@@ -78,10 +79,10 @@ def test_workflow_output_sources_are_real_stage_outputs():
 
 # Map each stage id to the app dir whose dxapp.json defines its outputSpec.
 STAGE_APP = {
-    "chr_prefix": "eggd_chr_prefix", "amber": "eggd_cgp-amber", "cobalt": "eggd_cgp-cobalt",
-    "sage": "eggd_cgp-sage", "purple": "eggd_cgp-purple", "qc_flags": "eggd_cgp-qc-flags",
-    "cnv_chr_strip": "eggd_cnv_chr_strip",
-    "cnvkit_batch": "eggd_cgp-cnvkit-batch", "purple_plotter": "eggd_purple_plotter",
+    "amber": "eggd_cgp-amber", "cobalt": "eggd_cgp-cobalt", "sage": "eggd_cgp-sage",
+    "purple": "eggd_cgp-purple", "cnv_chr_strip": "eggd_cnv_chr_strip",
+    "cnvkit_batch": "eggd_cgp-cnvkit-batch",
+    "purple_plotter": "eggd_purple_plotter",
 }
 
 
