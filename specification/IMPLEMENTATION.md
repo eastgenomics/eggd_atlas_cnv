@@ -1,5 +1,14 @@
 # IMPLEMENTATION — eggd_atlas_cnv (TDD build plan)
 
+> **Historical record.** This milestone plan (M1–M11) describes how the repo was
+> originally built, when app sources were copied into a local `apps/` directory and
+> built from there. That directory no longer exists in this repo — each app now builds
+> and publishes itself from its own per-app GitHub repo (see `scripts/app_ids.json` for
+> the name→app-ID mapping), and `tests/test_workflow_json.py` validates `dxworkflow.json`
+> against the live, deployed app specs via `dx describe`, not a local copy. Any `apps/...`
+> path below is historical narrative, not a path that exists today. See
+> `specification/README.md` §"Project layout" for the current structure.
+
 ## 0. Prerequisites
 
 - Python 3.12, `python3-venv`, `git`.

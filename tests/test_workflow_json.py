@@ -1,8 +1,11 @@
 import json
+import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 WF = json.loads(Path("dxworkflow.json").read_text())
 STAGE_IDS = {s["id"] for s in WF["stages"]}
+APP_IDS = json.loads(Path("scripts/app_ids.json").read_text())
 
 
 def test_seven_stages():
@@ -77,7 +80,9 @@ def test_workflow_output_sources_are_real_stage_outputs():
         assert link["stage"] in STAGE_IDS
 
 
-# Map each stage id to the app dir whose dxapp.json defines its outputSpec.
+# Map each stage id to the app name whose live DNAnexus inputSpec/outputSpec applies.
+# Fetched by exact app ID (scripts/app_ids.json) via `dx describe`, not a local copy —
+# apps live in their own per-app GitHub repos; this repo does not vendor their source.
 STAGE_APP = {
     "amber": "eggd_cgp-amber", "cobalt": "eggd_cgp-cobalt", "sage": "eggd_cgp-sage",
     "purple": "eggd_cgp-purple", "cnv_chr_strip": "eggd_cnv_chr_strip",
@@ -86,13 +91,24 @@ STAGE_APP = {
 }
 
 
+@lru_cache(maxsize=None)
+def _dx_describe(app_id):
+    out = subprocess.run(["dx", "describe", app_id, "--json"],
+                          capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)
+
+
+def _app_id(stage_id):
+    return APP_IDS[STAGE_APP[stage_id]]
+
+
 def _outputspec(stage_id):
-    app = json.loads(Path(f"apps/{STAGE_APP[stage_id]}/dxapp.json").read_text())
+    app = _dx_describe(_app_id(stage_id))
     return {o["name"]: o["class"] for o in app["outputSpec"]}
 
 
 def _inputspec(stage_id):
-    app = json.loads(Path(f"apps/{STAGE_APP[stage_id]}/dxapp.json").read_text())
+    app = _dx_describe(_app_id(stage_id))
     return {i["name"]: i["class"] for i in app["inputSpec"]}
 
 

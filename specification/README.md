@@ -60,25 +60,6 @@ Read in this order:
 ```
 eggd_atlas_cnv/
 ├── dxworkflow.json                 ← the locked workflow (built with dx build)
-├── apps/                           ← app sources built by scripts/build_all.sh
-│   ├── eggd_cgp-amber/             ← AMBER app (converted from applet)
-│   │   ├── dxapp.json
-│   │   └── src/code.sh
-│   ├── eggd_cgp-cobalt/            ← COBALT app
-│   ├── eggd_cgp-sage/              ← SAGE app
-│   ├── eggd_cgp-purple/            ← PURPLE app + two-pass ploidy cap + scalar outputs
-│   │   ├── dxapp.json
-│   │   ├── src/code.sh
-│   │   └── resources/home/dnanexus/atlas/ploidy_gate.py  ← bundled decision helper
-│   ├── eggd_cgp-qc-flags/          ← QC-flags app
-│   ├── eggd_cgp-cnvkit-coverage/   ← existing app (per-run PoN build, via conductor)
-│   ├── eggd_cgp-cnvkit-pon/        ← existing app (per-run PoN build, via conductor)
-│   ├── eggd_cgp-cnvkit-batch/      ← existing app (per-sample workflow stage)
-│   ├── eggd_purple_plotter/        ← existing app (per-sample workflow stage)
-│   └── eggd_cnv_chr_strip/         ← NEW: chr→Ensembl copies of CNV files (final stage)
-│       ├── dxapp.json
-│       ├── src/code.sh
-│       └── resources/home/dnanexus/atlas/chr_strip.py
 ├── atlas_helpers/                  ← pure-Python decision logic (unit-tested here)
 │   ├── __init__.py
 │   ├── ploidy_gate.py              ← two-pass ploidy-cap decision (imported by purple app)
@@ -88,7 +69,9 @@ eggd_atlas_cnv/
 │   └── atlas_cnv_pon_provided.example.json / atlas_cnv_pon_built.example.json  ← eggd_conductor executables (one per PoN topology)
 ├── scripts/
 │   ├── resource_ids.env.template   ← all DNAnexus file/app IDs to fill in
-│   ├── build_all.sh                ← dx build --app for every app, in dependency order
+│   ├── app_ids.json                ← stage-app-name → built DNAnexus app ID (single source
+│   │                                  of truth for app identity; each app builds/publishes
+│   │                                  itself from its own per-app GitHub repo, not from here)
 │   └── run_e2e.sh                  ← run the workflow on one sample end-to-end
 ├── tests/
 │   ├── test_ploidy_gate.py         ← ploidy-cap decision unit tests
@@ -106,19 +89,28 @@ eggd_atlas_cnv/
 # 1. Init and install dev deps for the pure-Python helpers/tests
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
-# 2. Run the unit + workflow-JSON tests (no DNAnexus needed)
+# 2. Log in to DNAnexus (test_workflow_json.py validates dxworkflow.json against the
+#    live, deployed apps named in scripts/app_ids.json — no local app source needed)
+dx login
+
+# 3. Run the unit + workflow-JSON tests
 .venv/bin/pytest tests/ -v
 
-# 3. Log in to DNAnexus and select the build project
-dx login && dx select project-XXXX
-
-# 4. Fill in resource IDs, then build all apps + the workflow
+# 4. Each app builds and publishes itself from its own per-app GitHub repo (see
+#    scripts/app_ids.json for the eastgenomics/<app-name> repo per stage). Fill in
+#    remaining reference file IDs, then select the build project for the workflow itself
 cp scripts/resource_ids.env.template scripts/resource_ids.env   # edit IDs
-bash scripts/build_all.sh
+dx select project-XXXX
 
-# 5. Run the workflow on one BAM (chr prefix added by stage 0; PoN supplied as an input)
+# 5. Regenerate + build the workflow (references apps by exact app ID, not by name)
+python3 scripts/gen_workflow.py
+dx build --workflow . --overwrite
+
+# 6. Run the workflow on one sample (chr-prefixed BAM/BAI supplied by a separately-run
+#    eggd_chr_prefix; PoN supplied as a workflow input)
 dx run workflow-XXXX \
-  -iinput_bam="project-XXXX:file-BAM"   \
+  -iinput_bam="project-XXXX:file-CHR-PREFIXED-BAM"   \
+  -iinput_bai="project-XXXX:file-CHR-PREFIXED-BAI"    \
   -isample_id="25330S0047"              \
   -iploidy_cap_purity_threshold=0.35    \
   -icnvkit_cn_reference="project-XXXX:file-PON" \

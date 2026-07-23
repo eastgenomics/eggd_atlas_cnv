@@ -1,4 +1,13 @@
-# build-prompt.md — agent build instructions for eggd_atlas_cnv
+# build-prompt.md — agent build instructions for eggd_atlas_cnv (historical)
+
+> **Historical record.** This was the opening prompt used for the original build
+> (M1–M11). The repo has since evolved: `qc_flags` and `chr_prefix` were removed from
+> the workflow, and app sources moved out of a local `apps/` directory entirely — each
+> app now builds/publishes from its own per-app GitHub repo (`scripts/app_ids.json`
+> maps stage → app ID), and `tests/test_workflow_json.py` validates `dxworkflow.json`
+> against the live, deployed apps via `dx describe`. Read this for build-plan context,
+> not as instructions to follow verbatim today — see `specification/README.md` for the
+> current state.
 
 Copy everything below the line as the opening message to a fresh agent session.
 
@@ -6,7 +15,7 @@ Copy everything below the line as the opening message to a fresh agent session.
 
 You are building **eggd_atlas_cnv**, a per-sample DNAnexus workflow that runs a somatic
 CNV pipeline (chr-prefixed BAM/BAI supplied from a separately-run `eggd_chr_prefix`, then
-AMBER + COBALT + SAGE → PURPLE → QC-flags, plus CNVkit batch, joined by an IGV.js plotter),
+AMBER + COBALT + SAGE → PURPLE, plus CNVkit batch, joined by an IGV.js plotter),
 composed of DNAnexus **apps**.
 
 The complete specification lives in `specification/`. **Read all five documents in full,
