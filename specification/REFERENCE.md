@@ -50,7 +50,7 @@ Instance `mem2_ssd1_v2_x4`; timeout 6h. Always `-ref_genome_version 38`.
 |---|---|---|---|
 | in | tumour_bam, tumour_bai, sample_id | | |
 | in | sage_jar | file | SAGE 5.0-beta.11 |
-| in | ref_fasta, ref_fai | file | plain `.fa` + fai |
+| in | ref_fasta | file | plain `.fa`; app regenerates its own `.fai`/`.dict` at runtime (`samtools faidx`/`samtools dict`) |
 | in | hotspots_vcf, hotspots_tbi | file | |
 | in | panel_bed, hc_bed | file | panel + high-confidence BED |
 | in | pon_file | file | SAGE PON `.tsv.gz` |
@@ -201,7 +201,6 @@ ID with `dx api file-XXX listProjects` and record as `project:file`.
 | COBALT_REF_FAI | fai | `file-GjPxp3Q4qv8Vk76xFVjfyPgJ` |
 | SAGE_JAR | SAGE 5.0-beta.11 | `file-J8F1bFj4gPFvK81Z330Yfk3j` |
 | SAGE_REF_FASTA | plain `.fa` | `file-G5xBZvj4yPz1xZfqKKjkG8xQ` |
-| SAGE_REF_FAI | fai | `file-G5xF4984yPzJ61ZB1K7gkBXb` |
 | HOTSPOTS_VCF | SAGE hotspots | `file-J8F1kQQ4gPFbZQZ1BG7KY62z` |
 | HOTSPOTS_TBI | | `file-J8F1kV04gPFz7kZ45XfQPp4K` |
 | PANEL_BED | SAGE panel BED | `file-J8F1kv84gPFfQKqYbZVYQqv8` |
@@ -267,7 +266,7 @@ Stage link table (`$dnanexus_link`: `workflowInputField` = W, `{stage,outputFiel
 | cobalt | cobalt_jar / norm_file / diploid_regions / gc_profile / ref_fasta / ref_fai | fixed |
 | sage | tumour_bam / tumour_bai | W input_bam / input_bai |
 | sage | sample_id | W |
-| sage | sage_jar / ref_fasta / ref_fai / hotspots_* / panel_bed / hc_bed / pon_file / ensembl_data | fixed |
+| sage | sage_jar / ref_fasta / hotspots_* / panel_bed / hc_bed / pon_file / ensembl_data | fixed |
 | purple | sample_id | W |
 | purple | amber_tar | S amber.amber_tar |
 | purple | cobalt_tar | S cobalt.cobalt_tar |

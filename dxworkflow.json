@@ -225,9 +225,6 @@
         "ref_fasta": {
           "$dnanexus_link": "file-G5xBZvj4yPz1xZfqKKjkG8xQ"
         },
-        "ref_fai": {
-          "$dnanexus_link": "file-G5xF4984yPzJ61ZB1K7gkBXb"
-        },
         "hotspots_vcf": {
           "$dnanexus_link": "file-J8F1kQQ4gPFbZQZ1BG7KY62z"
         },
