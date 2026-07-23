@@ -1,8 +1,0 @@
-pyproject.toml
-atlas_helpers/__init__.py
-atlas_helpers.egg-info/PKG-INFO
-atlas_helpers.egg-info/SOURCES.txt
-atlas_helpers.egg-info/dependency_links.txt
-atlas_helpers.egg-info/requires.txt
-atlas_helpers.egg-info/top_level.txt
-tests/test_import.py
