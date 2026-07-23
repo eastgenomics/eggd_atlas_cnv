@@ -1,8 +1,7 @@
 # eggd_atlas_cnv — per-sample somatic CNV workflow (PURPLE + CNVkit + IGV)
 
-`eggd_atlas_cnv` is a DNAnexus **workflow** that takes one tumour BAM and produces a
-combined somatic copy-number call set: it adds the `chr` prefix (stage 0), then produces
-a genome-wide PURPLE profile (purity/ploidy-fitted, with an optional ploidy cap), a focal
+`eggd_atlas_cnv` is a DNAnexus **workflow** that takes a chr-prefixed tumour BAM and its
+BAI index and produces a combined somatic copy-number call set: it produces a genome-wide PURPLE profile (purity/ploidy-fitted, with an optional ploidy cap), a focal
 gene-level CNVkit profile (using either a supplied panel-of-normals or one built once per
 run by eggd_conductor outside the workflow), and a single IGV.js HTML report that overlays
 both (igv.js loads from a CDN at view time — not fully offline).
@@ -14,28 +13,23 @@ one locked, versioned, per-sample workflow composed entirely of **DNAnexus apps*
 
 ## What this workflow does
 
-Given one tumour BAM (typically Ensembl/`1..22,X,Y,MT`-named), a sample ID, and PoN
-configuration, the workflow runs (this is an operational summary; AMBER+COBALT are two
-parallel stages, so the nine DNAnexus app stages are `chr_prefix`, `amber`, `cobalt`,
-`sage`, `purple`, `qc_flags`, `cnvkit_batch`, `cnv_chr_strip`, `purple_plotter` — see
-DESIGN §3):
+Given a chr-prefixed tumour BAM and matching BAI (produced by a separately-run
+`eggd_chr_prefix`), a sample ID, and PoN configuration, the workflow runs (AMBER+COBALT
+are parallel stages, so there are seven DNAnexus app stages: `amber`, `cobalt`, `sage`,
+`purple`, `cnvkit_batch`, `cnv_chr_strip`, `purple_plotter` — see DESIGN §3):
 
-0. Runs **eggd_chr_prefix** (stage 0) to add the `chr` prefix to the BAM header and
-   generate its index — producing the chr-prefixed GRCh38 BAM every downstream tool needs.
 1. Runs **AMBER** (BAF per germline site) and **COBALT** (read-depth ratios) in parallel.
 2. Runs **SAGE** to produce a somatic SNV/indel VCF (panel mode).
 3. Runs **PURPLE** to fit purity, ploidy, and genome-wide copy-number segments —
    applying a **maximum-ploidy cap** when requested, either as a hard cap
    (`max_ploidy`) or conditionally on a purity threshold (e.g. cap ploidy at 2 when
    fitted purity < 0.35). PURPLE emits purity and ploidy as scalar job outputs.
-4. Runs **QC-flags** to derive a structured QC report (purity, ploidy, status, WGD,
-   best-fit recovery for `NO_TUMOR`).
-5. Runs **CNVkit batch** (coverage → fix → segment → call → plot → genemetrics)
+4. Runs **CNVkit batch** (coverage → fix → segment → call → plot → genemetrics)
    against a supplied panel-of-normals (`cnvkit_cn_reference`), feeding PURPLE's purity
    and ploidy into integer CN calling.
-6. Runs **eggd_purple_plotter** to overlay PURPLE + AMBER + CNVkit into one
+5. Runs **eggd_purple_plotter** to overlay PURPLE + AMBER + CNVkit into one
    IGV.js HTML report (igv.js loads from a CDN at view time — not fully offline).
-7. Runs **eggd_cnv_chr_strip** to write Ensembl-named (`*.nochr.*`) copies of the CNV call
+6. Runs **eggd_cnv_chr_strip** to write Ensembl-named (`*.nochr.*`) copies of the CNV call
    files for downstream apps, **retaining the chr-prefixed originals**.
 
 The panel-of-normals is **an input to the workflow, never built inside it**. When a run
@@ -66,28 +60,6 @@ Read in this order:
 ```
 eggd_atlas_cnv/
 ├── dxworkflow.json                 ← the locked workflow (built with dx build)
-├── apps/                           ← app sources built by scripts/build_all.sh
-│   ├── eggd_chr_prefix/            ← stage 0 app (folded in; single-file I/O + passthrough)
-│   │   ├── dxapp.json
-│   │   └── src/code.sh
-│   ├── eggd_cgp-amber/             ← AMBER app (converted from applet)
-│   │   ├── dxapp.json
-│   │   └── src/code.sh
-│   ├── eggd_cgp-cobalt/            ← COBALT app
-│   ├── eggd_cgp-sage/              ← SAGE app
-│   ├── eggd_cgp-purple/            ← PURPLE app + two-pass ploidy cap + scalar outputs
-│   │   ├── dxapp.json
-│   │   ├── src/code.sh
-│   │   └── resources/home/dnanexus/atlas/ploidy_gate.py  ← bundled decision helper
-│   ├── eggd_cgp-qc-flags/          ← QC-flags app
-│   ├── eggd_cgp-cnvkit-coverage/   ← existing app (per-run PoN build, via conductor)
-│   ├── eggd_cgp-cnvkit-pon/        ← existing app (per-run PoN build, via conductor)
-│   ├── eggd_cgp-cnvkit-batch/      ← existing app (per-sample workflow stage)
-│   ├── eggd_purple_plotter/        ← existing app (per-sample workflow stage)
-│   └── eggd_cnv_chr_strip/         ← NEW: chr→Ensembl copies of CNV files (final stage)
-│       ├── dxapp.json
-│       ├── src/code.sh
-│       └── resources/home/dnanexus/atlas/chr_strip.py
 ├── atlas_helpers/                  ← pure-Python decision logic (unit-tested here)
 │   ├── __init__.py
 │   ├── ploidy_gate.py              ← two-pass ploidy-cap decision (imported by purple app)
@@ -97,7 +69,9 @@ eggd_atlas_cnv/
 │   └── atlas_cnv_pon_provided.example.json / atlas_cnv_pon_built.example.json  ← eggd_conductor executables (one per PoN topology)
 ├── scripts/
 │   ├── resource_ids.env.template   ← all DNAnexus file/app IDs to fill in
-│   ├── build_all.sh                ← dx build --app for every app, in dependency order
+│   ├── app_ids.json                ← stage-app-name → built DNAnexus app ID (single source
+│   │                                  of truth for app identity; each app builds/publishes
+│   │                                  itself from its own per-app GitHub repo, not from here)
 │   └── run_e2e.sh                  ← run the workflow on one sample end-to-end
 ├── tests/
 │   ├── test_ploidy_gate.py         ← ploidy-cap decision unit tests
@@ -115,19 +89,28 @@ eggd_atlas_cnv/
 # 1. Init and install dev deps for the pure-Python helpers/tests
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
-# 2. Run the unit + workflow-JSON tests (no DNAnexus needed)
+# 2. Log in to DNAnexus (test_workflow_json.py validates dxworkflow.json against the
+#    live, deployed apps named in scripts/app_ids.json — no local app source needed)
+dx login
+
+# 3. Run the unit + workflow-JSON tests
 .venv/bin/pytest tests/ -v
 
-# 3. Log in to DNAnexus and select the build project
-dx login && dx select project-XXXX
-
-# 4. Fill in resource IDs, then build all apps + the workflow
+# 4. Each app builds and publishes itself from its own per-app GitHub repo (see
+#    scripts/app_ids.json for the eastgenomics/<app-name> repo per stage). Fill in
+#    remaining reference file IDs, then select the build project for the workflow itself
 cp scripts/resource_ids.env.template scripts/resource_ids.env   # edit IDs
-bash scripts/build_all.sh
+dx select project-XXXX
 
-# 5. Run the workflow on one BAM (chr prefix added by stage 0; PoN supplied as an input)
+# 5. Regenerate + build the workflow (references apps by exact app ID, not by name)
+python3 scripts/gen_workflow.py
+dx build --workflow . --overwrite
+
+# 6. Run the workflow on one sample (chr-prefixed BAM/BAI supplied by a separately-run
+#    eggd_chr_prefix; PoN supplied as a workflow input)
 dx run workflow-XXXX \
-  -iinput_bam="project-XXXX:file-BAM"   \
+  -iinput_bam="project-XXXX:file-CHR-PREFIXED-BAM"   \
+  -iinput_bai="project-XXXX:file-CHR-PREFIXED-BAI"    \
   -isample_id="25330S0047"              \
   -iploidy_cap_purity_threshold=0.35    \
   -icnvkit_cn_reference="project-XXXX:file-PON" \
@@ -146,7 +129,7 @@ The PoN choice is a **config decision, not a workflow branch**:
 | Use case | Conductor topology |
 |---|---|
 | **PoN provided** | Per-sample `eggd_atlas_cnv` only; `cnvkit_cn_reference` is a static `$dnanexus_link {project,id}`. |
-| **PoN built** | `eggd_chr_prefix` (per-sample) → `eggd_cgp-cnvkit-coverage` (per-sample, parallel) → `eggd_cgp-cnvkit-pon` (per-run, `depends_on` + `hold`, gathers the coverage array with an **include** `inputs_filter` matching real specimen IDs) → `eggd_atlas_cnv` (per-sample, `cnvkit_cn_reference` ← the per-run `cn_reference`; stage 0 passes the already-prefixed BAM through). |
+| **PoN built** | `eggd_chr_prefix` (per-sample) → `eggd_cgp-cnvkit-coverage` (per-sample, parallel) → `eggd_cgp-cnvkit-pon` (per-run, `depends_on` + `hold`, gathers the coverage array with an **include** `inputs_filter` matching real specimen IDs) → `eggd_atlas_cnv` (per-sample, `cnvkit_cn_reference` ← the per-run `cn_reference`; `input_bam`/`input_bai` ← the same per-sample `chr_prefix` analysis). |
 
 See `conductor/atlas_cnv_pon_{provided,built}.example.json` and REFERENCE §4.
 
