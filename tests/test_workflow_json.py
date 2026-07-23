@@ -23,7 +23,7 @@ def _links(stage_input):
 
 def test_all_stage_links_reference_existing_stages():
     for s in WF["stages"]:
-        for src, field in _links(s.get("input", {})):
+        for src, _ in _links(s.get("input", {})):
             assert src in STAGE_IDS, f"{s['id']} links unknown stage {src}"
 
 

@@ -1,7 +1,6 @@
 import csv
 import math
 from dataclasses import dataclass
-from pathlib import Path
 
 
 class PurityParseError(ValueError):
@@ -20,7 +19,7 @@ class PurityFit:
 
 
 def read_purity_ploidy(path) -> PurityFit:
-    with open(Path(path)) as fh:
+    with open(path) as fh:
         rows = list(csv.DictReader(fh, delimiter="\t"))
     if not rows:
         raise PurityParseError(f"no data rows in {path}")
