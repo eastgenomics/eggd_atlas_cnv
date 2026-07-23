@@ -19,7 +19,7 @@ def execu(app_name):
 
 # Fixed reference files (REFERENCE §2). Objects without an explicit project use bare id.
 F = {
-    "AMBER_JAR": {"id": "file-J893948470j1X5zP1gGZYk6G"},
+    "AMBER_JAR": {"id": "file-J9936z04p12z3FYjFYb448pP"},
     "GERMLINE_SITES": {"id": "file-J88xxvQ4QyV82JKY5PkqXGbv"},
     "COBALT_JAR": {"id": "file-J893p9Q470j4zY3zzpVBjP11"},
     "NORM_FILE": {"id": "file-J89183j4zxxZ5v7Gv5F9BK06"},

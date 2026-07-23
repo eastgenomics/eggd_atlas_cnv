@@ -191,7 +191,7 @@ ID with `dx api file-XXX listProjects` and record as `project:file`.
 
 | Var | Purpose | File ID |
 |---|---|---|
-| AMBER_JAR | AMBER 4.3-beta.4 | `file-J893948470j1X5zP1gGZYk6G` |
+| AMBER_JAR | AMBER 4.3-beta.4 (patched, deterministic PCF segmentation — see hartwigmedical/hmftools#844) | `file-J9936z04p12z3FYjFYb448pP` |
 | GERMLINE_SITES | AMBER het PON loci | `file-J88xxvQ4QyV82JKY5PkqXGbv` |
 | COBALT_JAR | COBALT 3.0-beta.5 | `file-J893p9Q470j4zY3zzpVBjP11` |
 | NORM_FILE | COBALT target-region norm | `file-J89183j4zxxZ5v7Gv5F9BK06` |
