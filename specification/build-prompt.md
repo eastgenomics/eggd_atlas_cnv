@@ -1,12 +1,22 @@
-# build-prompt.md — agent build instructions for eggd_atlas_cnv
+# build-prompt.md — agent build instructions for eggd_atlas_cnv (historical)
+
+> **Historical record.** This was the opening prompt used for the original build
+> (M1–M11). The repo has since evolved: `qc_flags` and `chr_prefix` were removed from
+> the workflow, and app sources moved out of a local `apps/` directory entirely — each
+> app now builds/publishes from its own per-app GitHub repo (`scripts/app_ids.json`
+> maps stage → app ID), and `tests/test_workflow_json.py` validates `dxworkflow.json`
+> against the live, deployed apps via `dx describe`. Read this for build-plan context,
+> not as instructions to follow verbatim today — see `specification/README.md` for the
+> current state.
 
 Copy everything below the line as the opening message to a fresh agent session.
 
 ---
 
 You are building **eggd_atlas_cnv**, a per-sample DNAnexus workflow that runs a somatic
-CNV pipeline (chr-prefix stage 0, then AMBER + COBALT + SAGE → PURPLE → QC-flags, plus
-CNVkit batch, joined by an IGV.js plotter), composed of DNAnexus **apps**.
+CNV pipeline (chr-prefixed BAM/BAI supplied from a separately-run `eggd_chr_prefix`, then
+AMBER + COBALT + SAGE → PURPLE, plus CNVkit batch, joined by an IGV.js plotter),
+composed of DNAnexus **apps**.
 
 The complete specification lives in `specification/`. **Read all five documents in full,
 in order, before writing any code** (this file, `build-prompt.md`, is the fifth — it holds
@@ -48,8 +58,8 @@ the invariants you must uphold):
 | M3–M5 ⚠️ | `dx build --app apps/eggd_cgp-<tool> --overwrite` + smoke | builds; documented output appears |
 | M6 ⚠️ | `pytest tests/test_ploidy_gate.py tests/test_purity.py` + `dx build --app apps/eggd_cgp-purple` | builds; conditional re-run + scalar purity/ploidy/sample_sex + cnv_somatic_tsv/cnv_gene_tsv |
 | M7 ⚠️ | `dx build --app apps/eggd_cgp-qc-flags --overwrite` | builds; 16-col qc_report |
-| M8 ⚠️ | `pytest tests/test_chr_strip.py` + `dx build --app` chr_prefix + cnv_chr_strip + coverage/pon/batch/plotter | chr_prefix single-file+passthrough; strip writes `*.nochr.*` keeping originals; six apps build; plotter accepts `.genemetrics.tsv` |
-| M9 | `.venv/bin/pytest tests/test_workflow_json.py -v` | 9 stages; downstream BAMs from chr_prefix; CNV `*_nochr` outputs from cnv_chr_strip; scalar links; cn_reference is a workflow input |
+| M8 ⚠️ | `pytest tests/test_chr_strip.py` + `dx build --app` cnv_chr_strip + coverage/pon/batch/plotter | strip writes `*.nochr.*` keeping originals; five apps build; plotter accepts `.genemetrics.tsv` |
+| M9 | `.venv/bin/pytest tests/test_workflow_json.py -v` | 8 stages; chr-prefixed BAM/BAI are workflow inputs; CNV `*_nochr` outputs from cnv_chr_strip; scalar links; cn_reference is a workflow input |
 | M10 | `.venv/bin/pytest tests/test_conductor_config.py -v` | per-run PoN topology valid; cn_reference linked from the pon analysis |
 | M11 ⚠️ | `bash scripts/run_e2e.sh <sample>` | non-empty `igv_html` |
 
@@ -130,7 +140,7 @@ hg38), never the stripped ones. **Verify:** `tests/test_chr_strip.py` passes
 The workflow has no `cnvkit_coverage` stage — `cnvkit_batch` computes its own on-target
 coverage. Do not add a second coverage stage. (The per-run PoN build computes coverage
 separately via conductor; that is a different, run-level job.) **Verify:** `dxworkflow.json`
-has exactly 9 stages and no stage named `cnvkit_coverage`.
+has exactly 7 stages and no stage named `cnvkit_coverage`.
 
 ## Starting instruction
 

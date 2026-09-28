@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eggd_cgp-purple — Code Walkthrough (1/4)</title>
+<style>
+  :root{
+    --ink:#0d1b2a; --ink-soft:#354656; --muted:#6b7c8d;
+    --line:#e0e7ef; --line-strong:#c5d0db;
+    --bg:#f7f9fb; --paper:#ffffff;
+    --accent:#005eb8; --accent-deep:#003d78; --accent-mid:#1a73c4; --accent-soft:#e3edf8;
+    --green:#1a6e47; --green-soft:#e0f0e8;
+    --amber:#b35c00; --amber-soft:#fdf0e0;
+    --red:#9b2335; --red-soft:#fce8ea;
+    --purple:#4b2d8e; --purple-soft:#ede8f8;
+    --shadow:0 1px 3px rgba(13,27,42,.05),0 4px 20px rgba(13,27,42,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:var(--accent-mid);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1320px;margin:0 auto}
+  @media(max-width:860px){.layout{grid-template-columns:1fr}.toc{display:none}}
+  main{padding:0 56px 96px;max-width:900px}
+  @media(max-width:860px){main{padding:0 24px 64px}}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.015em;font-weight:800;color:var(--ink);margin-bottom:14px;max-width:26ch}
+  h2{font-size:24px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  h2 .sec-num{font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:#fff;
+    padding:3px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
+  h3{font-size:17px;font-weight:700;margin:28px 0 10px;color:var(--ink)}
+  h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:600}
+  p{margin-bottom:13px;color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  ul,ol{margin:0 0 14px;padding-left:22px}
+  li{margin:5px 0;color:var(--ink-soft)}
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:28px 24px;background:var(--paper);border-right:1px solid var(--line);font-size:13px}
+  .toc-brand{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent-deep);margin-bottom:20px;line-height:1.4}
+  .toc-section{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--muted);margin:18px 0 6px}
+  .toc ul{list-style:none}
+  .toc ul li a{display:block;padding:5px 0 5px 16px;color:var(--ink-soft);
+    border-left:2px solid transparent;transition:all .15s;font-size:12.5px;line-height:1.4}
+  .toc ul li a:hover{color:var(--accent);border-left-color:var(--accent);text-decoration:none;padding-left:20px}
+  .toc .meta{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.6}
+  .hero{padding:52px 0 36px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px}
+  .hero .sub{font-size:17px;line-height:1.55;color:var(--ink-soft);max-width:64ch}
+  .hero .meta-row{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap}
+  .hero .meta-item{font-size:12px;color:var(--muted)}
+  .hero .meta-item strong{color:var(--ink-soft)}
+  section{padding-top:52px}
+  section+section{border-top:1px solid var(--line)}
+  footer{padding:32px 56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);max-width:1320px;margin:0 auto;line-height:1.7}
+  .callout{border-radius:6px;padding:18px 22px;margin:18px 0;border:1px solid}
+  .callout.blue{border-color:#b3cce8;background:var(--accent-soft)}
+  .callout.green{border-color:#a8d4bb;background:var(--green-soft)}
+  .callout.amber{border-color:#e8c28a;background:var(--amber-soft)}
+  .callout .tag{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+  .callout.blue .tag{color:var(--accent-deep)}
+  .callout.green .tag{color:var(--green)}
+  .callout.amber .tag{color:var(--amber)}
+  .callout p:last-child{margin:0}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:16px;border-top:3px solid var(--accent)}
+  .stat .n{font-size:26px;font-weight:800;color:var(--accent-deep);line-height:1.1;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .stat .src{font-size:10.5px;color:var(--line-strong);margin-top:8px;font-style:italic}
+  .card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:18px 0}
+  @media(max-width:640px){.card-grid{grid-template-columns:1fr}}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:18px;box-shadow:var(--shadow)}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .card-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .card-name{font-weight:700;font-size:14.5px;color:var(--ink);line-height:1.2}
+  .card-sub{font-size:11.5px;color:var(--muted)}
+  .card p{font-size:13.5px;margin:0 0 10px}
+  .card p:last-child{margin:0}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.04em}
+  .pill.green{background:var(--green-soft);color:var(--green)}
+  .pill.amber{background:var(--amber-soft);color:var(--amber)}
+  .pill.blue{background:var(--accent-soft);color:var(--accent-deep)}
+  .pill.purple{background:var(--purple-soft);color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f0f4f8;font-weight:600;font-size:12.5px;color:var(--ink);letter-spacing:.02em}
+  tr:hover td{background:#fafbfd}
+  figure{margin:24px 0}
+  .fig-wrap{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:20px;overflow:auto}
+  figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;font-style:italic;line-height:1.5}
+  .ref{display:inline-block;background:#f0f4f8;border:1px solid var(--line);border-radius:4px;padding:1px 7px;
+    font-size:11.5px;color:var(--ink-soft);font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:#f0f4f8;padding:2px 6px;border-radius:3px;color:var(--accent-deep)}
+  .cb{background:#1e2d3d;border-radius:8px;padding:20px 22px;margin:16px 0;overflow-x:auto}
+  .cb pre{color:#cdd9e5;font:13px/1.75 ui-monospace,Menlo,Consolas,monospace;margin:0;white-space:pre}
+  .cb .c{color:#6e9cbf} .cb .k{color:#79b8ff} .cb .s{color:#9ecbff} .cb .n{color:#b392f0} .cb .f{color:#85e89d} .cb .t{color:#ffab70}
+  .file-section{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#f0f4f8;border:1px solid var(--line);
+    border-radius:6px;margin:20px 0 8px;font-size:13px}
+  .file-section .fs-range{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted)}
+  .file-section .fs-name{font-weight:700;color:var(--ink)}
+  .series-nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+  .series-nav a{display:inline-block;padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:600;
+    border:1px solid var(--line);background:var(--paper);color:var(--ink-soft)}
+  .series-nav a.current{background:var(--accent-deep);color:#fff;border-color:var(--accent-deep)}
+  .series-nav a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="toc">
+  <div class="toc-brand">PERSONAL BRIEFING — eggd_cgp-purple CODE<br>5 July 2026</div>
+  <div class="toc-section">Part 1 of 4</div>
+  <ul>
+    <li><a href="#what">What this file does</a></li>
+    <li><a href="#phases">The 7 phases</a></li>
+    <li><a href="#dataflow">Data flow</a></li>
+    <li><a href="#deps">External dependencies</a></li>
+    <li><a href="#inventory">Function inventory</a></li>
+    <li><a href="#naming">Naming conventions</a></li>
+    <li><a href="#howto">How to use this series</a></li>
+  </ul>
+  <div class="meta">Source: <span class="ref">src/code.sh</span>, <span class="ref">ploidy_gate.py</span>, <span class="ref">purity.py</span> in eastgenomics/eggd_cgp-purple @ add-app-v1.0.0</div>
+</aside>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Code walkthrough · eggd_atlas_cnv workflow</div>
+  <h1>eggd_cgp-purple — how the app works</h1>
+  <p class="sub">A DNAnexus bash app that wraps PURPLE (purity/ploidy/copy-number fitting), adds an optional two-pass ploidy cap, and emits typed scalar outputs for the next workflow stage. Part 1 of 4: orientation before reading a single line.</p>
+  <div class="meta-row">
+    <span class="meta-item"><strong>Author</strong> Joo Wook Ahn</span>
+    <span class="meta-item"><strong>Date</strong> 5 July 2026</span>
+    <span class="meta-item"><strong>Files covered</strong> src/code.sh · resources/atlas/ploidy_gate.py · resources/atlas/purity.py</span>
+  </div>
+</header>
+
+<div class="series-nav">
+  <a href="260705_eggd_cgp-purple_Code_1.html" class="current">1 · High-level outline</a>
+  <a href="260705_eggd_cgp-purple_Code_2.html">2 · Key concepts</a>
+  <a href="260705_eggd_cgp-purple_Code_3.html">3 · Function walkthrough</a>
+  <a href="260705_eggd_cgp-purple_Code_4.html">4 · Line-by-line reference</a>
+</div>
+
+<section id="what">
+  <h2><span class="sec-num">01</span> What this file does</h2>
+  <p>
+    <code>src/code.sh</code> is the entry point of a DNAnexus <strong>app</strong> — a small, self-contained
+    unit of compute that runs inside a cloud worker, downloads its declared inputs, does some work, and
+    uploads its declared outputs. This particular app runs <strong>PURPLE</strong> (from the Hartwig Medical
+    Foundation's <code>hmftools</code> suite), a Java tool that combines B-allele-frequency data (from AMBER),
+    read-depth-ratio data (from COBALT) and an optional somatic VCF (from SAGE) to fit a sample's tumour
+    <strong>purity</strong> (what fraction of cells are tumour) and <strong>ploidy</strong> (average copy
+    number), then segments the genome into copy-number regions.
+  </p>
+  <p>
+    The app is not a thin wrapper. It adds a feature PURPLE itself does not have: an optional
+    <strong>maximum-ploidy cap</strong>. Some low-purity samples get fitted to biologically implausible high
+    ploidy values; the app can force a second, capped run when that happens. It also solves a wiring problem —
+    a DNAnexus workflow cannot read a number out of a file to pass to the next stage — by parsing PURPLE's
+    result file itself and re-emitting purity/ploidy/sex as first-class typed values the next stage can
+    consume directly.
+  </p>
+  <div class="callout blue">
+    <span class="tag">Not in scope</span>
+    <p>This file does not run AMBER, COBALT or SAGE (those are separate upstream apps in the same workflow),
+    does not build the IGV report (a downstream app does that), and does not decide <em>whether</em> a ploidy
+    cap should be applied from clinical judgement — it only executes whatever cap policy the workflow's
+    inputs specify.</p>
+  </div>
+</section>
+
+<section id="phases">
+  <h2><span class="sec-num">02</span> The 7 phases</h2>
+  <p>
+    The script's own comments number its phases <code>[1/7]</code> through <code>[7/7]</code>. Phase 3 is
+    the interesting one — it delegates a decision to a bundled Python module rather than encoding the logic
+    directly in bash, because the decision has enough edge cases (mutual exclusion, range validation) to
+    deserve real unit tests.
+  </p>
+  <figure>
+    <div class="fig-wrap">
+      <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Seven-phase flow diagram of eggd_cgp-purple execution">
+        <style>
+          .lbl{font:700 12.5px -apple-system,Segoe UI,Inter,sans-serif}
+          .sub{font:11px -apple-system,Segoe UI,Inter,sans-serif}
+          .num{font:800 13px ui-monospace,Menlo,Consolas,monospace}
+        </style>
+        <text x="16" y="22" font-size="12" letter-spacing="2" fill="#6b7c8d">FLOW DIAGRAM — SEQUENTIAL PHASES</text>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0L10 5L0 10z" fill="#1a73c4"/>
+          </marker>
+        </defs>
+        <!-- row 1: phases 1-4 -->
+        <g>
+          <rect x="16" y="48" width="170" height="70" rx="8" fill="#e3edf8" stroke="#b3cce8"/>
+          <text x="28" y="70" class="num" fill="#003d78">1</text>
+          <text x="28" y="90" class="lbl" fill="#003d78">Download inputs</text>
+          <text x="28" y="106" class="sub" fill="#354656">jars, tars, refs, VCF pair</text>
+        </g>
+        <line x1="186" y1="83" x2="212" y2="83" stroke="#1a73c4" stroke-width="2" marker-end="url(#arrow)"/>
+        <g>
+          <rect x="212" y="48" width="170" height="70" rx="8" fill="#e3edf8" stroke="#b3cce8"/>
+          <text x="224" y="70" class="num" fill="#003d78">2</text>
+          <text x="224" y="90" class="lbl" fill="#003d78">Prepare inputs</text>
+          <text x="224" y="106" class="sub" fill="#354656">untar, decompress FASTA</text>
+        </g>
+        <line x1="382" y1="83" x2="408" y2="83" stroke="#1a73c4" stroke-width="2" marker-end="url(#arrow)"/>
+        <g>
+          <rect x="408" y="48" width="190" height="70" rx="8" fill="#ede8f8" stroke="#c9b8ec"/>
+          <text x="420" y="70" class="num" fill="#4b2d8e">3</text>
+          <text x="420" y="90" class="lbl" fill="#4b2d8e">Resolve ploidy cap</text>
+          <text x="420" y="106" class="sub" fill="#354656">delegates to ploidy_gate.py</text>
+        </g>
+        <line x1="598" y1="83" x2="624" y2="83" stroke="#1a73c4" stroke-width="2" marker-end="url(#arrow)"/>
+        <g>
+          <rect x="624" y="48" width="180" height="70" rx="8" fill="#e3edf8" stroke="#b3cce8"/>
+          <text x="636" y="70" class="num" fill="#003d78">4</text>
+          <text x="636" y="90" class="lbl" fill="#003d78">Run PURPLE, pass 1</text>
+          <text x="636" y="106" class="sub" fill="#354656">writes to purple_out/</text>
+        </g>
+        <!-- connector down -->
+        <line x1="714" y1="118" x2="714" y2="150" stroke="#1a73c4" stroke-width="2"/>
+        <line x1="714" y1="150" x2="204" y2="150" stroke="#1a73c4" stroke-width="2"/>
+        <line x1="204" y1="150" x2="204" y2="176" stroke="#1a73c4" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- row 2: phases 5-7 -->
+        <g>
+          <rect x="16" y="176" width="220" height="76" rx="8" fill="#fdf0e0" stroke="#e8c28a"/>
+          <text x="28" y="198" class="num" fill="#b35c00">5</text>
+          <text x="28" y="218" class="lbl" fill="#b35c00">Conditional re-run</text>
+          <text x="28" y="234" class="sub" fill="#354656">only if mode=conditional</text>
+          <text x="28" y="248" class="sub" fill="#354656">and purity &lt; threshold</text>
+        </g>
+        <line x1="236" y1="214" x2="262" y2="214" stroke="#1a73c4" stroke-width="2" marker-end="url(#arrow)"/>
+        <g>
+          <rect x="262" y="176" width="220" height="76" rx="8" fill="#e3edf8" stroke="#b3cce8"/>
+          <text x="274" y="198" class="num" fill="#003d78">6</text>
+          <text x="274" y="218" class="lbl" fill="#003d78">Parse final result</text>
+          <text x="274" y="234" class="sub" fill="#354656">purity.py -&gt; JSON -&gt; jq</text>
+          <text x="274" y="248" class="sub" fill="#354656">collect plot PNGs</text>
+        </g>
+        <line x1="482" y1="214" x2="508" y2="214" stroke="#1a73c4" stroke-width="2" marker-end="url(#arrow)"/>
+        <g>
+          <rect x="508" y="176" width="296" height="76" rx="8" fill="#e0f0e8" stroke="#a8d4bb"/>
+          <text x="520" y="198" class="num" fill="#1a6e47">7</text>
+          <text x="520" y="218" class="lbl" fill="#1a6e47">Assemble &amp; upload outputs</text>
+          <text x="520" y="234" class="sub" fill="#354656">purple_tar bundles AMBER BAF too</text>
+          <text x="520" y="248" class="sub" fill="#354656">emit 3 scalars + 2 CNV TSVs</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Figure 1 · The seven phases as they appear in the script's own progress comments. Phase 5 is skipped entirely unless the workflow requested a conditional ploidy cap and the fitted purity falls below the threshold.</figcaption>
+  </figure>
+</section>
+
+<section id="dataflow">
+  <h2><span class="sec-num">03</span> Data flow</h2>
+  <p>Inputs arrive as DNAnexus file references (opaque IDs); by the end they have become a mix of uploaded
+  files and typed scalar values sitting in the job's output record.</p>
+  <table>
+    <thead><tr><th>Stage</th><th>Form of the data</th><th>Where it lives</th></tr></thead>
+    <tbody>
+      <tr><td>Input</td><td>DNAnexus file IDs (<code>amber_tar</code>, <code>cobalt_tar</code>, <code>somatic_vcf</code>…)</td><td>job input JSON</td></tr>
+      <tr><td>Downloaded</td><td>Local <code>.tar.gz</code>/<code>.jar</code>/<code>.gz</code> files</td><td>working directory</td></tr>
+      <tr><td>Extracted</td><td>AMBER/COBALT directories, plain FASTA + <code>.fai</code></td><td><code>./&lt;amber_dir&gt;/</code>, <code>./&lt;cobalt_dir&gt;/</code>, <code>ref.fasta</code></td></tr>
+      <tr><td>Ploidy decision</td><td>A JSON string (<code>FIRST_ARGS_JSON</code>) carrying a Python <code>PloidyDecision</code> back into bash</td><td>shell variable, decoded via <code>jq</code></td></tr>
+      <tr><td>PURPLE output</td><td>A directory of TSVs, a purity summary, optional PNGs</td><td><code>purple_out/</code></td></tr>
+      <tr><td>Parsed scalars</td><td>A second JSON blob (<code>{"purity":…, "ploidy":…, "sex":…}</code>)</td><td>shell variable <code>SCALARS_JSON</code>, then split into <code>FPUR</code>/<code>FPLO</code>/<code>FSEX</code></td></tr>
+      <tr><td>Final output</td><td>Uploaded files (tars, TSVs) + three typed scalars (<code>float</code>/<code>int</code>/<code>string</code>)</td><td>DNAnexus job output record, consumed by the next workflow stage</td></tr>
+    </tbody>
+  </table>
+  <div class="callout green">
+    <span class="tag">Why this matters</span>
+    <p>The two JSON hand-offs (bash→Python→bash) exist because bash cannot safely represent a list of
+    command-line arguments or a purity/ploidy/sex triple as plain text without risking word-splitting or
+    injection bugs. JSON plus <code>jq</code> gives a delimiter-safe channel. Part 2 covers this pattern in
+    depth.</p>
+  </div>
+</section>
+
+<section id="deps">
+  <h2><span class="sec-num">04</span> External dependencies</h2>
+  <table>
+    <thead><tr><th>Dependency</th><th>Kind</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><code>java</code></td><td>Runtime (execDepends)</td><td>Runs <code>purple.jar</code> itself</td></tr>
+      <tr><td><code>samtools</code></td><td>CLI tool</td><td><code>faidx</code> to index the decompressed reference FASTA</td></tr>
+      <tr><td><code>bgzip</code> (htslib)</td><td>CLI tool</td><td>Decompresses the bgzipped reference FASTA to plain text (PURPLE needs plain FASTA)</td></tr>
+      <tr><td><code>jq</code></td><td>CLI tool</td><td>Decodes the two JSON hand-offs from Python back into bash variables/arrays</td></tr>
+      <tr><td><code>Rscript</code>, <code>circos</code></td><td>CLI tools</td><td>Used internally by PURPLE to render chart PNGs (not called directly by this script — only version-probed at startup)</td></tr>
+      <tr><td><code>dx</code> / <code>dx-jobutil-add-output</code></td><td>DNAnexus SDK</td><td>Download inputs, upload outputs, and register the typed scalar outputs</td></tr>
+      <tr><td><code>ploidy_gate.py</code></td><td>Bundled first-party module</td><td>Pure Python; decides STATIC / CONDITIONAL / NONE ploidy-cap mode</td></tr>
+      <tr><td><code>purity.py</code></td><td>Bundled first-party module</td><td>Pure Python; parses PURPLE's purity TSV into a typed dataclass</td></tr>
+    </tbody>
+  </table>
+  <p>Both bundled Python modules are invoked via short heredoc scripts passed to <code>python3 -</code> with
+  <code>sys.path.insert(0, "$ATLAS")</code> — this is a lazy, ad-hoc import rather than a package install,
+  because the DNAnexus app bundles arbitrary files under <code>resources/</code> and this is the simplest way
+  to make them importable without a build step.</p>
+</section>
+
+<section id="inventory">
+  <h2><span class="sec-num">05</span> Function inventory</h2>
+  <table>
+    <thead><tr><th>Function</th><th>File : lines</th><th>Phase</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>main()</code></td><td>code.sh : 12–182</td><td>1–7</td><td>The entire app logic; bash has no other functions besides one small local helper</td></tr>
+      <tr><td><code>run_purple()</code></td><td>code.sh : 76–90</td><td>4, 5</td><td>Local closure wrapping the <code>java -jar purple.jar</code> invocation so it can be called twice with different extra args</td></tr>
+      <tr><td><code>decide()</code></td><td>ploidy_gate.py : 33–52</td><td>3</td><td>Pure function: given the three ploidy-cap inputs, returns which mode applies and what to do</td></tr>
+      <tr><td><code>PloidyDecision.needs_rerun()</code></td><td>ploidy_gate.py : 22–27</td><td>5</td><td>Given a fitted purity, says whether pass 2 is required</td></tr>
+      <tr><td><code>PloidyDecision.rerun_args()</code></td><td>ploidy_gate.py : 29–30</td><td>5</td><td>Returns the extra PURPLE CLI args for the capped re-run</td></tr>
+      <tr><td><code>read_purity_ploidy()</code></td><td>purity.py : 21–34</td><td>6</td><td>Parses PURPLE's purity TSV into a <code>PurityFit</code>, raising on malformed/non-finite data</td></tr>
+      <tr><td><code>PurityFit.ploidy_int()</code></td><td>purity.py : 18–19</td><td>6</td><td>Rounds the float ploidy to an int, floored at 1 (DNAnexus scalar output is typed <code>int</code>)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="naming">
+  <h2><span class="sec-num">06</span> Naming conventions</h2>
+  <ul>
+    <li><strong>ALL_CAPS shell variables</strong> (<code>WORK</code>, <code>PTSV</code>, <code>FPUR</code>, <code>SCALARS_JSON</code>) are script-local state, distinct from DNAnexus job-input variables which arrive lower_snake_case (<code>sample_id</code>, <code>amber_tar</code>) because DNAnexus injects them as exact-cased bash variables matching the app's <code>inputSpec</code> names.</li>
+    <li><strong><code>@dataclass(frozen=True)</code></strong> on both <code>PloidyDecision</code> and <code>PurityFit</code> signals "this is an immutable value object, not something you mutate after construction" — a deliberate defensive choice for values that flow between processes.</li>
+    <li><strong><code>class PloidyMode(str, Enum)</code></strong> — inheriting from <code>str</code> as well as <code>Enum</code> means the enum members compare equal to plain strings and serialise cleanly to JSON without a custom encoder.</li>
+    <li><strong>Trailing <code>Error</code> exception names</strong> (<code>PloidyConfigError</code>, <code>PurityParseError</code>) each subclass <code>ValueError</code> — they signal "the caller passed bad data", not a bug in this code.</li>
+    <li><strong>Numbered comment banners</strong> (<code># ── 0. Sanitise … ──</code>) mark phase boundaries inside <code>main()</code> and are the basis for the phase diagram in Figure 1.</li>
+  </ul>
+</section>
+
+<section id="howto">
+  <h2><span class="sec-num">07</span> How to use this series</h2>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon" style="background:var(--accent-soft)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="#005eb8" stroke-width="1.6"/><path d="M8 9h8M8 13h8M8 17h5" stroke="#005eb8" stroke-width="1.6"/></svg>
+        </div>
+        <div><div class="card-name">Part 1 — High-level outline</div><div class="card-sub">You are here</div></div>
+      </div>
+      <p>Orientation: what the app does, its seven phases, data flow, dependencies, and a complete function inventory. Read this first regardless of how much bash/Python you already know.</p>
+      <span class="pill blue">Start here</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon" style="background:var(--purple-soft)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#4b2d8e" stroke-width="1.6"/><path d="M12 8v4l3 2" stroke="#4b2d8e" stroke-width="1.6"/></svg>
+        </div>
+        <div><div class="card-name">Part 2 — Key concepts</div><div class="card-sub">Prerequisite ideas</div></div>
+      </div>
+      <p>Explains <code>set -euo pipefail</code>, the bash↔Python↔jq JSON bridge, frozen dataclasses, DNAnexus scalar vs file outputs, and the two-pass idempotent re-run pattern — each with a minimal standalone example.</p>
+      <span class="pill purple">Read if unfamiliar</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon" style="background:var(--green-soft)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="#1a6e47" stroke-width="1.6"/></svg>
+        </div>
+        <div><div class="card-name">Part 3 — Function walkthrough</div><div class="card-sub">Every function, explained</div></div>
+      </div>
+      <p><code>main()</code> broken into its seven phases as individual boxes, plus the three Python helper functions — purpose, inputs/outputs, key logic, and the design decisions behind each.</p>
+      <span class="pill green">Main content</span>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon" style="background:var(--amber-soft)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 4h9l5 5v11H6z" stroke="#b35c00" stroke-width="1.6"/><path d="M9 12h6M9 16h6" stroke="#b35c00" stroke-width="1.6"/></svg>
+        </div>
+        <div><div class="card-name">Part 4 — Line-by-line reference</div><div class="card-sub">The hardest 5 blocks</div></div>
+      </div>
+      <p>Dense, numbered annotations for the ploidy-cap resolution block, the conditional re-run gate, the scalar-JSON extraction, and the two Python functions — for when you need to modify this code safely.</p>
+      <span class="pill amber">Deep reference</span>
+    </div>
+  </div>
+</section>
+
+<div class="series-nav">
+  <a href="260705_eggd_cgp-purple_Code_1.html" class="current">1 · High-level outline</a>
+  <a href="260705_eggd_cgp-purple_Code_2.html">2 · Key concepts</a>
+  <a href="260705_eggd_cgp-purple_Code_3.html">3 · Function walkthrough</a>
+  <a href="260705_eggd_cgp-purple_Code_4.html">4 · Line-by-line reference</a>
+</div>
+
+</main>
+</div>
+<footer>
+  Code walkthrough of <span class="ref">eastgenomics/eggd_cgp-purple</span> (branch <span class="ref">add-app-v1.0.0</span>), part of the <span class="ref">eggd_atlas_cnv</span> somatic CNV workflow. Author: Joo Wook Ahn · 5 July 2026. Continues in Part 2.
+</footer>
+</body>
+</html>

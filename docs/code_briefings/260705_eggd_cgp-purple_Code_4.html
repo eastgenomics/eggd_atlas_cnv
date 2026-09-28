@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eggd_cgp-purple — Code Walkthrough (4/4)</title>
+<style>
+  :root{
+    --ink:#0d1b2a; --ink-soft:#354656; --muted:#6b7c8d;
+    --line:#e0e7ef; --line-strong:#c5d0db;
+    --bg:#f7f9fb; --paper:#ffffff;
+    --accent:#005eb8; --accent-deep:#003d78; --accent-mid:#1a73c4; --accent-soft:#e3edf8;
+    --green:#1a6e47; --green-soft:#e0f0e8;
+    --amber:#b35c00; --amber-soft:#fdf0e0;
+    --red:#9b2335; --red-soft:#fce8ea;
+    --purple:#4b2d8e; --purple-soft:#ede8f8;
+    --shadow:0 1px 3px rgba(13,27,42,.05),0 4px 20px rgba(13,27,42,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:var(--accent-mid);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1320px;margin:0 auto}
+  @media(max-width:860px){.layout{grid-template-columns:1fr}.toc{display:none}}
+  main{padding:0 56px 96px;max-width:900px}
+  @media(max-width:860px){main{padding:0 24px 64px}}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.015em;font-weight:800;color:var(--ink);margin-bottom:14px;max-width:26ch}
+  h2{font-size:24px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  h2 .sec-num{font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:#fff;
+    padding:3px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
+  h3{font-size:17px;font-weight:700;margin:28px 0 10px;color:var(--ink)}
+  p{margin-bottom:13px;color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  ul,ol{margin:0 0 14px;padding-left:22px}
+  li{margin:5px 0;color:var(--ink-soft)}
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:28px 24px;background:var(--paper);border-right:1px solid var(--line);font-size:13px}
+  .toc-brand{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent-deep);margin-bottom:20px;line-height:1.4}
+  .toc-section{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--muted);margin:18px 0 6px}
+  .toc ul{list-style:none}
+  .toc ul li a{display:block;padding:5px 0 5px 16px;color:var(--ink-soft);
+    border-left:2px solid transparent;transition:all .15s;font-size:12.5px;line-height:1.4}
+  .toc ul li a:hover{color:var(--accent);border-left-color:var(--accent);text-decoration:none;padding-left:20px}
+  .toc .meta{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.6}
+  .hero{padding:52px 0 36px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px}
+  .hero .sub{font-size:17px;line-height:1.55;color:var(--ink-soft);max-width:64ch}
+  .hero .meta-row{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap}
+  .hero .meta-item{font-size:12px;color:var(--muted)}
+  .hero .meta-item strong{color:var(--ink-soft)}
+  section{padding-top:52px}
+  section+section{border-top:1px solid var(--line)}
+  footer{padding:32px 56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);max-width:1320px;margin:0 auto;line-height:1.7}
+  .callout{border-radius:6px;padding:18px 22px;margin:18px 0;border:1px solid}
+  .callout.amber{border-color:#e8c28a;background:var(--amber-soft)}
+  .callout .tag{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+  .callout.amber .tag{color:var(--amber)}
+  .callout p:last-child{margin:0}
+  .ref{display:inline-block;background:#f0f4f8;border:1px solid var(--line);border-radius:4px;padding:1px 7px;
+    font-size:11.5px;color:var(--ink-soft);font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:#f0f4f8;padding:2px 6px;border-radius:3px;color:var(--accent-deep)}
+  .acb{margin:20px 0 32px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .acb-header{background:var(--accent-deep);padding:10px 16px;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+  .acb-fn{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;color:#fff;font-weight:700}
+  .acb-desc{font-size:12px;color:#a8c8e8}
+  .acb-code{background:#1e2d3d;padding:0;overflow-x:auto}
+  .acb-code pre{color:#cdd9e5;font:12.5px/1.9 ui-monospace,Menlo,Consolas,monospace;margin:0;padding:16px 20px;white-space:pre}
+  .acb .c{color:#6e9cbf} .acb .k{color:#79b8ff} .acb .s{color:#9ecbff} .acb .n{color:#b392f0} .acb .f{color:#85e89d} .acb .t{color:#ffab70}
+  .acb-annos{border-top:2px solid #2d4a63}
+  .anno-row{display:grid;grid-template-columns:44px 1fr;border-bottom:1px solid var(--line)}
+  .anno-row:last-child{border-bottom:none}
+  .anno-num{background:#f0f4f8;border-right:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;
+    padding:12px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:var(--accent-deep);padding-top:14px}
+  .anno-txt{padding:12px 16px;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+  .anno-txt strong{color:var(--ink)}
+  .anno-txt code{font-size:12.5px}
+  .series-nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+  .series-nav a{display:inline-block;padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:600;
+    border:1px solid var(--line);background:var(--paper);color:var(--ink-soft)}
+  .series-nav a.current{background:var(--accent-deep);color:#fff;border-color:var(--accent-deep)}
+  .series-nav a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="toc">
+  <div class="toc-brand">PERSONAL BRIEFING — eggd_cgp-purple CODE<br>5 July 2026</div>
+  <div class="toc-section">Part 4 of 4</div>
+  <ul>
+    <li><a href="#block1">Ploidy-cap resolution block</a></li>
+    <li><a href="#block2">Conditional re-run gate</a></li>
+    <li><a href="#block3">Scalar-JSON extraction</a></li>
+    <li><a href="#block4">decide()</a></li>
+    <li><a href="#block5">read_purity_ploidy()</a></li>
+  </ul>
+  <div class="meta">Source: <span class="ref">src/code.sh</span>, <span class="ref">ploidy_gate.py</span>, <span class="ref">purity.py</span> in eastgenomics/eggd_cgp-purple @ add-app-v1.0.0</div>
+</aside>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Code walkthrough · eggd_atlas_cnv workflow</div>
+  <h1>eggd_cgp-purple — how the app works</h1>
+  <p class="sub">Dense, numbered annotations for the five hardest blocks — Part 4 of 4: Line-by-line reference.</p>
+  <div class="meta-row">
+    <span class="meta-item"><strong>Author</strong> Joo Wook Ahn</span>
+    <span class="meta-item"><strong>Date</strong> 5 July 2026</span>
+  </div>
+</header>
+
+<div class="series-nav">
+  <a href="260705_eggd_cgp-purple_Code_1.html">1 · High-level outline</a>
+  <a href="260705_eggd_cgp-purple_Code_2.html">2 · Key concepts</a>
+  <a href="260705_eggd_cgp-purple_Code_3.html">3 · Function walkthrough</a>
+  <a href="260705_eggd_cgp-purple_Code_4.html" class="current">4 · Line-by-line reference</a>
+</div>
+
+<section id="block1">
+  <h2><span class="sec-num">01</span> Ploidy-cap resolution block</h2>
+  <p>The single densest block in the whole app: a bash↔Python round trip that must survive being embedded
+  inside an <code>eval</code>. Five things could each independently go wrong here, so every line earns its
+  place.</p>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">code.sh : 96–115</span>
+      <span class="acb-desc">Resolve ploidy-cap mode, decode the result back into bash</span>
+    </div>
+    <div class="acb-code"><pre><span class="k">EVAL</span>=$(<span class="k">max_ploidy</span>=<span class="s">"${max_ploidy:-}"</span> \  <span class="c">     # ①</span>
+       <span class="k">ploidy_cap_purity_threshold</span>=<span class="s">"${ploidy_cap_purity_threshold:-}"</span> \
+       <span class="k">ploidy_cap_value</span>=<span class="s">"${ploidy_cap_value:-2}"</span> \
+       python3 - <span class="s">"$ATLAS"</span> &lt;&lt;<span class="s">'PY'</span>  <span class="c">                       # ②</span>
+<span class="k">import</span> sys, os, json
+sys.path.insert(<span class="n">0</span>, sys.argv[<span class="n">1</span>])
+<span class="k">from</span> ploidy_gate <span class="k">import</span> decide
+d = decide(                                              <span class="c"># ③</span>
+    max_ploidy=(int(os.environ[<span class="s">"max_ploidy"</span>]) if os.environ.get(<span class="s">"max_ploidy"</span>) else None),
+    threshold=(float(os.environ[<span class="s">"ploidy_cap_purity_threshold"</span>]) if os.environ.get(<span class="s">"ploidy_cap_purity_threshold"</span>) else None),
+    cap_value=int(os.environ.get(<span class="s">"ploidy_cap_value"</span>, <span class="s">"2"</span>)),
+)
+print(<span class="s">"FIRST_ARGS_JSON="</span> + json.dumps(json.dumps(d.first_pass_args)))  <span class="c"># ④</span>
+print(<span class="s">"CONDITIONAL="</span> + (<span class="s">"yes"</span> if d.conditional else <span class="s">"no"</span>))
+print(<span class="s">"MODE="</span> + d.mode.value)
+<span class="s">PY</span>
+)
+<span class="k">eval</span> <span class="s">"$EVAL"</span>                                              <span class="c"># ⑤</span>
+<span class="k">mapfile</span> -t FIRST_ARGS &lt; &lt;(jq -r <span class="s">'.[]'</span> &lt;&lt;&lt;<span class="s">"$FIRST_ARGS_JSON"</span>)      <span class="c"># ⑥</span></pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>Environment-scoped variable assignment.</strong> Placing <code>VAR=value</code> before a command sets it as an environment variable for that one command only — it does not leak into the rest of the script. This is the only way to hand a bash variable to a subprocess that doesn't otherwise share bash's variable namespace. <code>${max_ploidy:-}</code> defaults to empty string if unset (required because <code>set -u</code> is active and this job input is optional).</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>Quoted heredoc delimiter.</strong> <code>&lt;&lt;'PY'</code> (quotes around <code>PY</code>) disables bash variable/command substitution <em>inside</em> the heredoc body — without the quotes, bash would try to expand <code>$sys</code>-looking tokens in the Python source itself, corrupting it.</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>The actual decision.</strong> This is the one line that calls the pure function covered in Part 3/§08. Everything else in this block is plumbing to get its inputs in and its output out.</div></div>
+      <div class="anno-row"><div class="anno-num">④</div><div class="anno-txt"><strong>Double JSON encoding — the trickiest line.</strong> <code>d.first_pass_args</code> is a Python list, e.g. <code>["-max_ploidy", "3"]</code>. <code>json.dumps(...)</code> once turns that into the JSON text <code>["-max_ploidy", "3"]</code>. Wrapping it in <code>json.dumps(...)</code> <em>again</em> turns that text into a JSON <em>string literal</em> — <code>"[\"-max_ploidy\", \"3\"]"</code> — with the inner quotes escaped. Printed after <code>FIRST_ARGS_JSON=</code>, this becomes a line that <code>eval</code> can safely treat as <code>FIRST_ARGS_JSON='[\"-max_ploidy\", \"3\"]'</code>: a single-quoted assignment with no unescaped special characters, regardless of what the array actually contains. Skipping the second encoding would break as soon as an argument contained a double quote or a bash-special character.</div></div>
+      <div class="anno-row"><div class="anno-num">⑤</div><div class="anno-txt"><strong>The eval.</strong> This executes the three <code>NAME=value</code> lines Python printed, as if they'd been typed directly into the script — setting <code>FIRST_ARGS_JSON</code>, <code>CONDITIONAL</code> and <code>MODE</code> in the current shell. This is safe here specifically because the text being eval'd was generated by trusted first-party code moments earlier, not user input.</div></div>
+      <div class="anno-row"><div class="anno-num">⑥</div><div class="anno-txt"><strong>Decoding the (singly) JSON-encoded array.</strong> <code>$FIRST_ARGS_JSON</code> now holds the plain JSON array text (the double-encoding was only needed to survive the eval in step ⑤ — once decoded, it's back to <code>["-max_ploidy", "3"]</code>). <code>jq -r '.[]'</code> prints each array element on its own line, unquoted; <code>mapfile -t</code> reads those lines into a real bash array, one element per line, with the trailing newline stripped from each (<code>-t</code>). The result, <code>FIRST_ARGS</code>, can now be safely expanded as <code>"${FIRST_ARGS[@]}"</code> even if an element contained spaces.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="block2">
+  <h2><span class="sec-num">02</span> Conditional re-run gate</h2>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">code.sh : 128–136</span>
+      <span class="acb-desc">Decide whether pass 2 is needed, using the pass-1 result</span>
+    </div>
+    <div class="acb-code"><pre><span class="k">if</span> [ <span class="s">"$CONDITIONAL"</span> = <span class="s">"yes"</span> ]; <span class="k">then</span>                                          <span class="c"># ①</span>
+    PURITY=$(python3 -c <span class="s">"import sys;sys.path.insert(0,'$ATLAS');from purity import read_purity_ploidy as r;print(r('$PTSV').purity)"</span>)  <span class="c"># ②</span>
+    NEED=$(python3 -c <span class="s">"print('yes' if float('$PURITY') &lt; float('${ploidy_cap_purity_threshold:-}') else 'no')"</span>)  <span class="c"># ③</span>
+    <span class="k">if</span> [ <span class="s">"$NEED"</span> = <span class="s">"yes"</span> ]; <span class="k">then</span>
+        rm -rf <span class="s">"${WORK}"</span>; mkdir -p <span class="s">"${WORK}"</span>                                <span class="c"># ④</span>
+        run_purple -max_ploidy <span class="s">"${ploidy_cap_value:-2}"</span>                        <span class="c"># ⑤</span>
+        [[ -s <span class="s">"${PTSV}"</span> ]] || { echo <span class="s">"ERROR: … after pass 2"</span>; exit <span class="n">1</span>; }
+    <span class="k">fi</span>
+<span class="k">fi</span></pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>Gate on mode, not on presence of a threshold.</strong> <code>CONDITIONAL</code> was set by <code>decide()</code> in the previous block — it's <code>"yes"</code> only in CONDITIONAL mode. This is deliberately checked instead of re-testing <code>[ -n "$ploidy_cap_purity_threshold" ]</code>, because the mode decision (with its mutual-exclusion validation) already happened once in Python and should not be re-derived here.</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>One-off Python invocation via -c, not a heredoc.</strong> This needs only a single value back (<code>.purity</code>), so a one-liner is used instead of the heavier JSON-bridge pattern from Block 1 — appropriate because there's no list/array to transport and no risk of the value containing shell metacharacters (it's a float parsed from PURPLE's own output).</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>String interpolation of a float into a Python literal.</strong> <code>float('$PURITY')</code> — <code>$PURITY</code> is substituted by bash <em>before</em> Python ever sees the line, so Python receives e.g. <code>float('0.79')</code>. This works because <code>$PURITY</code> is bash's own captured output from the line above and is guaranteed to be a plain decimal string, not attacker-controlled text.</div></div>
+      <div class="anno-row"><div class="anno-num">④</div><div class="anno-txt"><strong>The idempotency guarantee, again.</strong> Identical to the pre-pass-1 clear in Phase 4 — see Part 2 §5. Skipping this line would leave pass-1's files sitting alongside pass-2's, and PURPLE's own overwrite behaviour for pre-existing files is not something this script relies on.</div></div>
+      <div class="anno-row"><div class="anno-num">⑤</div><div class="anno-txt"><strong>Only the cap flag differs.</strong> Everything else <code>run_purple</code> needs (AMBER_DIR, COBALT_DIR, SOMATIC_ARG, …) is still in scope from Phase 1–2 and doesn't need to be re-supplied — this is the payoff of factoring the PURPLE invocation into a closure in Part 3 §05.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="block3">
+  <h2><span class="sec-num">03</span> Scalar-JSON extraction (the eval-free version)</h2>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">code.sh : 143–152</span>
+      <span class="acb-desc">Parse the final purity.tsv and get purity/ploidy/sex into bash scalars — without eval</span>
+    </div>
+    <div class="acb-code"><pre><span class="k">SCALARS_JSON</span>=$(python3 - <span class="s">"$ATLAS"</span> <span class="s">"$PTSV"</span> &lt;&lt;<span class="s">'PY'</span>
+<span class="k">import</span> sys, json
+sys.path.insert(<span class="n">0</span>, sys.argv[<span class="n">1</span>])
+<span class="k">from</span> purity <span class="k">import</span> read_purity_ploidy
+f = read_purity_ploidy(sys.argv[<span class="n">2</span>])                                     <span class="c"># ①</span>
+sex = f.sample_sex if f.sample_sex in (<span class="s">"male"</span>, <span class="s">"female"</span>) <span class="k">else</span> <span class="s">"unknown"</span>       <span class="c"># ②</span>
+print(json.dumps({<span class="s">"purity"</span>: f.purity, <span class="s">"ploidy"</span>: f.ploidy_int(), <span class="s">"sex"</span>: sex}))   <span class="c"># ③</span>
+<span class="s">PY</span>
+)
+FPUR=$(jq -r <span class="s">'.purity'</span> &lt;&lt;&lt;<span class="s">"$SCALARS_JSON"</span>)                            <span class="c"># ④</span>
+FPLO=$(jq -r <span class="s">'.ploidy'</span> &lt;&lt;&lt;<span class="s">"$SCALARS_JSON"</span>)
+FSEX=$(jq -r <span class="s">'.sex'</span>    &lt;&lt;&lt;<span class="s">"$SCALARS_JSON"</span>)</pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>The single parse point.</strong> Whichever pass ran last, <code>$PTSV</code> (fixed earlier, unchanged by which pass produced it) points at the correct final result. <code>read_purity_ploidy</code> raises <code>PurityParseError</code> on malformed data, which propagates as a Python traceback and non-zero exit, tripping <code>set -e</code>.</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>Allow-listing the sex value.</strong> <code>f.sample_sex</code> came from PURPLE's TSV via <code>purity.py</code> (lower-cased there). This line only trusts it if it's exactly <code>"male"</code> or <code>"female"</code>; anything else — an unexpected value, a typo in PURPLE's output format in a future version — becomes <code>"unknown"</code> rather than being passed through unchecked. This is a deliberate hardening added after an earlier version of this script used <code>eval</code> on this value directly (see the callout below).</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>One JSON object, three fields, one encoding layer.</strong> Unlike Block 1, this JSON is <em>not</em> double-encoded, because it is never going to be <code>eval</code>'d — it's only ever read field-by-field with <code>jq</code>. This is the safer of the two bridge patterns in this file and is preferred whenever the payload doesn't need to become bash variable assignments directly.</div></div>
+      <div class="anno-row"><div class="anno-num">④</div><div class="anno-txt"><strong>jq -r strips quotes.</strong> Without <code>-r</code> ("raw output"), <code>jq '.purity'</code> would print <code>0.79</code> with surrounding quotes if the value were a JSON string; here the values are JSON numbers/strings and <code>-r</code> ensures <code>FPUR</code> ends up as the bare text <code>0.79</code>, not <code>"0.79"</code>, ready to pass to <code>dx-jobutil-add-output … --class=float</code>.</div></div>
+    </div>
+    <div class="acb-code" style="border-top:2px solid #2d4a63"></div>
+  </div>
+  <div class="callout amber">
+    <span class="tag">Gotcha this design avoids</span>
+    <p>An earlier revision of this script extracted these three values with a single <code>eval "$(python3 … print(f'FPUR={f.purity}; FPLO={f.ploidy_int()}; FSEX={f.sample_sex or "unknown"}') …)"</code> — i.e. Python printed a bash assignment statement directly, and bash <code>eval</code>'d it. That is unsafe specifically for <code>FSEX</code>, because its value originates from an external file (PURPLE's TSV, ultimately derived from a BAM header or sample metadata) rather than from trusted first-party code. A crafted or corrupted <code>gender</code> field could inject arbitrary shell commands into the eval'd string. The current version never eval's data that came from outside the script.</p>
+  </div>
+</section>
+
+<section id="block4">
+  <h2><span class="sec-num">04</span> <code>decide()</code></h2>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">ploidy_gate.py : 33–52</span>
+      <span class="acb-desc">The pure decision function</span>
+    </div>
+    <div class="acb-code"><pre><span class="k">def</span> <span class="f">decide</span>(max_ploidy, threshold, cap_value=<span class="n">2</span>) -&gt; PloidyDecision:
+    <span class="k">if</span> max_ploidy <span class="k">is not</span> <span class="k">None</span> <span class="k">and</span> threshold <span class="k">is not</span> <span class="k">None</span>:            <span class="c"># ①</span>
+        <span class="k">raise</span> PloidyConfigError(
+            <span class="s">"max_ploidy and ploidy_cap_purity_threshold are mutually exclusive"</span>
+        )
+    <span class="k">if</span> max_ploidy <span class="k">is not</span> <span class="k">None</span>:                                          <span class="c"># ②</span>
+        <span class="k">if</span> max_ploidy &lt; <span class="n">1</span>:
+            <span class="k">raise</span> PloidyConfigError(<span class="s">"max_ploidy must be &gt;= 1"</span>)
+        <span class="k">return</span> PloidyDecision(
+            PloidyMode.STATIC, [<span class="s">"-max_ploidy"</span>, str(max_ploidy)], <span class="k">False</span>, cap_value, <span class="k">None</span>
+        )
+    <span class="k">if</span> threshold <span class="k">is not</span> <span class="k">None</span>:                                            <span class="c"># ③</span>
+        <span class="k">if</span> cap_value &lt; <span class="n">1</span>:
+            <span class="k">raise</span> PloidyConfigError(<span class="s">"ploidy_cap_value must be &gt;= 1"</span>)
+        <span class="k">if not</span> (<span class="n">0.0</span> &lt; float(threshold) &lt;= <span class="n">1.0</span>):                          <span class="c"># ④</span>
+            <span class="k">raise</span> PloidyConfigError(<span class="s">"ploidy_cap_purity_threshold must be in (0, 1]"</span>)
+        <span class="k">return</span> PloidyDecision(
+            PloidyMode.CONDITIONAL, [], <span class="k">True</span>, cap_value, float(threshold)
+        )
+    <span class="k">return</span> PloidyDecision(PloidyMode.NONE, [], <span class="k">False</span>, cap_value, <span class="k">None</span>)          <span class="c"># ⑤</span></pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>Mutual exclusion checked first, unconditionally.</strong> This must run before any mode-specific validation, otherwise a caller supplying both an invalid <code>max_ploidy</code> <em>and</em> a <code>threshold</code> might see a confusing "max_ploidy must be &gt;= 1" error when the real problem is that both were supplied at all.</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>STATIC branch — first_pass_args is populated immediately.</strong> Unlike CONDITIONAL mode, STATIC needs no second pass: the cap is applied on the very first PURPLE invocation, so <code>first_pass_args</code> already contains <code>-max_ploidy N</code> and <code>conditional</code> is <code>False</code>.</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>CONDITIONAL branch — first_pass_args stays empty.</strong> Pass 1 must run <em>unbounded</em> so the app can observe PURPLE's natural fit before deciding whether to intervene; the cap only gets attached on a possible pass 2, via <code>rerun_args()</code> (Part 3 §09), not here.</div></div>
+      <div class="anno-row"><div class="anno-num">④</div><div class="anno-txt"><strong>Range check reads oddly on purpose.</strong> <code>0.0 &lt; float(threshold) &lt;= 1.0</code> is an open-closed interval: 0 itself is rejected (a threshold of zero can never trigger — see Part 3 §08's callout) but 1.0 is allowed (a threshold of 1 means "always re-run unless purity is exactly 1", a valid if extreme configuration).</div></div>
+      <div class="anno-row"><div class="anno-num">⑤</div><div class="anno-txt"><strong>The implicit default: no cap at all.</strong> If neither input was supplied, the function falls through all three <code>if</code>s to this final line — <code>PloidyMode.NONE</code>, empty args, not conditional. This is the same code path a completely unconfigured workflow run takes, and it deliberately does not raise — a missing ploidy-cap configuration is a valid, common case, not an error.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="block5">
+  <h2><span class="sec-num">05</span> <code>read_purity_ploidy()</code></h2>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">purity.py : 21–34</span>
+      <span class="acb-desc">Parse PURPLE's purity TSV, guarding against malformed/non-finite data</span>
+    </div>
+    <div class="acb-code"><pre><span class="k">def</span> <span class="f">read_purity_ploidy</span>(path) -&gt; PurityFit:
+    <span class="k">with</span> open(Path(path)) <span class="k">as</span> fh:
+        rows = list(csv.DictReader(fh, delimiter=<span class="s">"\t"</span>))                <span class="c"># ①</span>
+    <span class="k">if not</span> rows:
+        <span class="k">raise</span> PurityParseError(<span class="s">f"no data rows in {path}"</span>)         <span class="c"># ②</span>
+    d = rows[<span class="n">0</span>]
+    <span class="k">try</span>:
+        purity = float(d[<span class="s">"purity"</span>])
+        ploidy = float(d[<span class="s">"ploidy"</span>])
+    <span class="k">except</span> (KeyError, ValueError) <span class="k">as</span> e:                          <span class="c"># ③</span>
+        <span class="k">raise</span> PurityParseError(str(e)) <span class="k">from</span> e
+    <span class="k">if not</span> math.isfinite(purity) <span class="k">or not</span> math.isfinite(ploidy):     <span class="c"># ④</span>
+        <span class="k">raise</span> PurityParseError(<span class="s">f"non-finite purity/ploidy in {path}"</span>)
+    sex = d.get(<span class="s">"gender"</span>, <span class="s">""</span>).strip().lower()                     <span class="c"># ⑤</span>
+    <span class="k">return</span> PurityFit(purity, ploidy, d.get(<span class="s">"status"</span>, <span class="s">""</span>), sex)</pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>DictReader over a tab-delimited file.</strong> PURPLE writes purity TSVs with a header row naming each column; <code>csv.DictReader(..., delimiter="\t")</code> turns each subsequent row into a dict keyed by those header names, so the code below can say <code>d["purity"]</code> instead of tracking a column index — robust to PURPLE adding new columns in a future version, as long as it doesn't rename existing ones.</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>Empty file is a distinct failure mode from bad data.</strong> Checked separately from the parsing <code>try</code> below because <code>rows[0]</code> would raise an unhelpful <code>IndexError</code> otherwise — this gives a clear "no data rows" message pointing at the actual file.</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>Two different exception types, one handler.</strong> <code>KeyError</code> means the column doesn't exist at all (PURPLE's output format changed unexpectedly); <code>ValueError</code> means the column exists but its text isn't a valid float (e.g. <code>"NA"</code>). Both are genuinely "the file is not in the expected shape" from this function's point of view, so they're caught together and re-raised as the same domain-specific error type — callers only need to catch <code>PurityParseError</code>, not know about csv/float internals.</div></div>
+      <div class="anno-row"><div class="anno-num">④</div><div class="anno-txt"><strong>The check this whole function exists to add.</strong> <code>float("nan")</code> and <code>float("inf")</code> both succeed as conversions — the <code>try</code> above would not catch either. This explicit second check is what turns "PURPLE technically wrote parseable-but-meaningless numbers" into a caught, named error instead of a silent bad value flowing all the way to a downstream workflow stage as a plausible-looking scalar.</div></div>
+      <div class="anno-row"><div class="anno-num">⑤</div><div class="anno-txt"><strong>Defaulting, then normalising.</strong> <code>.get("gender", "")</code> means a missing <code>gender</code> column doesn't raise (unlike purity/ploidy, sex is not considered essential enough to fail the whole parse over) — it becomes an empty string, then <code>.strip().lower()</code> normalises whatever text is present. The empty-string case is handled later in <code>code.sh</code>'s own allow-list (Block 3, annotation ②), which maps anything that isn't exactly <code>"male"</code>/<code>"female"</code> to <code>"unknown"</code>.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="series-nav">
+  <a href="260705_eggd_cgp-purple_Code_1.html">1 · High-level outline</a>
+  <a href="260705_eggd_cgp-purple_Code_2.html">2 · Key concepts</a>
+  <a href="260705_eggd_cgp-purple_Code_3.html">3 · Function walkthrough</a>
+  <a href="260705_eggd_cgp-purple_Code_4.html" class="current">4 · Line-by-line reference</a>
+</div>
+
+</main>
+</div>
+<footer>
+  Code walkthrough of <span class="ref">eastgenomics/eggd_cgp-purple</span> (branch <span class="ref">add-app-v1.0.0</span>), part of the <span class="ref">eggd_atlas_cnv</span> somatic CNV workflow. Author: Joo Wook Ahn · 5 July 2026. Continued from Part 3. End of series.
+</footer>
+</body>
+</html>

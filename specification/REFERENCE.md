@@ -4,17 +4,18 @@
 
 Each row: input/output name → class (patterns / notes). ⚠️ = new or changed vs legacy.
 
-### 1.0 `eggd_chr_prefix` (folded in, adapted) — stage 0
+### 1.0 `eggd_chr_prefix` (external prerequisite)
 
 | Dir | Name | Class | Notes |
 |---|---|---|---|
 | in | input_bam | file | `*.bam`; raw tumour BAM (Ensembl or already-chr) |
-| in | mode | string | fixed `add_chr` (default; not a workflow input) |
+| in | mode | string | fixed `add_chr` (default) |
 | out ⚠️ | output_bam | file | `*.bam`; chr-prefixed (or passthrough) |
 | out ⚠️ | output_bai | file | `*.bai`; generated index |
 
-Adapted from public `eggd_chr_prefix` (array I/O → **single-file**; emits input unchanged
-when already prefixed). Ubuntu 20.04, samtools asset, `mem1_ssd1_v2_x2`, timeout 2h.
+Maintained and run outside this repository. It must expose single-file outputs and emit the
+input unchanged when already prefixed. Ubuntu 20.04, samtools asset, `mem1_ssd1_v2_x2`,
+timeout 2h.
 
 ### 1.1 `eggd_cgp-amber` (converted, v1.0.0)
 
@@ -49,7 +50,7 @@ Instance `mem2_ssd1_v2_x4`; timeout 6h. Always `-ref_genome_version 38`.
 |---|---|---|---|
 | in | tumour_bam, tumour_bai, sample_id | | |
 | in | sage_jar | file | SAGE 5.0-beta.11 |
-| in | ref_fasta, ref_fai | file | plain `.fa` + fai |
+| in | ref_fasta | file | plain `.fa`; app regenerates its own `.fai`/`.dict` at runtime (`samtools faidx`/`samtools dict`) |
 | in | hotspots_vcf, hotspots_tbi | file | |
 | in | panel_bed, hc_bed | file | panel + high-confidence BED |
 | in | pon_file | file | SAGE PON `.tsv.gz` |
@@ -190,7 +191,7 @@ ID with `dx api file-XXX listProjects` and record as `project:file`.
 
 | Var | Purpose | File ID |
 |---|---|---|
-| AMBER_JAR | AMBER 4.3-beta.4 | `file-J893948470j1X5zP1gGZYk6G` |
+| AMBER_JAR | AMBER 4.3-beta.4 (patched, deterministic PCF segmentation — see hartwigmedical/hmftools#844) | `file-J9936z04p12z3FYjFYb448pP` |
 | GERMLINE_SITES | AMBER het PON loci | `file-J88xxvQ4QyV82JKY5PkqXGbv` |
 | COBALT_JAR | COBALT 3.0-beta.5 | `file-J893p9Q470j4zY3zzpVBjP11` |
 | NORM_FILE | COBALT target-region norm | `file-J89183j4zxxZ5v7Gv5F9BK06` |
@@ -200,7 +201,6 @@ ID with `dx api file-XXX listProjects` and record as `project:file`.
 | COBALT_REF_FAI | fai | `file-GjPxp3Q4qv8Vk76xFVjfyPgJ` |
 | SAGE_JAR | SAGE 5.0-beta.11 | `file-J8F1bFj4gPFvK81Z330Yfk3j` |
 | SAGE_REF_FASTA | plain `.fa` | `file-G5xBZvj4yPz1xZfqKKjkG8xQ` |
-| SAGE_REF_FAI | fai | `file-G5xF4984yPzJ61ZB1K7gkBXb` |
 | HOTSPOTS_VCF | SAGE hotspots | `file-J8F1kQQ4gPFbZQZ1BG7KY62z` |
 | HOTSPOTS_TBI | | `file-J8F1kV04gPFz7kZ45XfQPp4K` |
 | PANEL_BED | SAGE panel BED | `file-J8F1kv84gPFfQKqYbZVYQqv8` |
@@ -220,7 +220,6 @@ ID with `dx api file-XXX listProjects` and record as `project:file`.
 
 ```bash
 # App IDs (filled after dx build --app)
-APP_CHR_PREFIX=app-XXXX
 APP_AMBER=app-XXXX
 APP_COBALT=app-XXXX
 APP_SAGE=app-XXXX
@@ -242,42 +241,39 @@ Workflow inputs:
 
 | Name | Class | Optional | Note |
 |---|---|---|---|
-| input_bam | file | no | raw tumour BAM (Ensembl or already-chr); → chr_prefix.input_bam |
+| input_bam | file | no | chr-prefixed tumour BAM from separately-run `eggd_chr_prefix` |
+| input_bai | file | no | matching BAI from separately-run `eggd_chr_prefix` |
 | sample_id | string | no | |
 | cnvkit_cn_reference | file | **no** | PoN `.cnn`; supplied static, or linked from a per-run `eggd_cgp-cnvkit-pon` job by conductor |
 | max_ploidy | int | yes | → purple.max_ploidy |
 | ploidy_cap_purity_threshold | float | yes | → purple.ploidy_cap_purity_threshold |
 | ploidy_cap_value | int | yes | → purple.ploidy_cap_value (default 2) |
 
-(No `tumour_bai` input — stage 0 generates the index. No `pon_coverage`/`pon_bams` inputs —
-PoN building happens once per run in conductor, §4, not inside the workflow.)
+`input_bam` and `input_bai` are produced by the separately-run chr-prefix step. No
+`pon_coverage`/`pon_bams` inputs — PoN building happens once per run in conductor, §4, not
+inside the workflow.
 
 Stage link table (`$dnanexus_link`: `workflowInputField` = W, `{stage,outputField}` = S):
 
 | Stage | Input | Source |
 |---|---|---|
-| chr_prefix | input_bam | W input_bam |
-| chr_prefix | mode | fixed `"add_chr"` |
-| amber | tumour_bam | S chr_prefix.output_bam |
-| amber | tumour_bai | S chr_prefix.output_bai |
+| amber | tumour_bam | W input_bam |
+| amber | tumour_bai | W input_bai |
 | amber | sample_id | W |
 | amber | amber_jar / germline_sites | fixed file IDs |
-| cobalt | tumour_bam / tumour_bai | S chr_prefix.output_bam / output_bai |
+| cobalt | tumour_bam / tumour_bai | W input_bam / input_bai |
 | cobalt | sample_id | W |
 | cobalt | cobalt_jar / norm_file / diploid_regions / gc_profile / ref_fasta / ref_fai | fixed |
-| sage | tumour_bam / tumour_bai | S chr_prefix.output_bam / output_bai |
+| sage | tumour_bam / tumour_bai | W input_bam / input_bai |
 | sage | sample_id | W |
-| sage | sage_jar / ref_fasta / ref_fai / hotspots_* / panel_bed / hc_bed / pon_file / ensembl_data | fixed |
+| sage | sage_jar / ref_fasta / hotspots_* / panel_bed / hc_bed / pon_file / ensembl_data | fixed |
 | purple | sample_id | W |
 | purple | amber_tar | S amber.amber_tar |
 | purple | cobalt_tar | S cobalt.cobalt_tar |
 | purple | somatic_vcf / somatic_vcf_tbi | S sage.somatic_vcf / somatic_vcf_tbi |
 | purple | purple_jar / gc_profile / target_regions_bed / ref_fasta / ref_fai / ensembl_data | fixed |
 | purple | max_ploidy / ploidy_cap_purity_threshold / ploidy_cap_value | W |
-| qc_flags | sample_id | W |
-| qc_flags | purity_tsv | S purple.purity_tsv |
-| qc_flags | purity_range_tsv | S purple.purity_range_tsv |
-| cnvkit_batch | tumour_bam / tumour_bai | S chr_prefix.output_bam / output_bai |
+| cnvkit_batch | tumour_bam / tumour_bai | W input_bam / input_bai |
 | cnvkit_batch | sample_id | W |
 | cnvkit_batch | cn_reference | **W cnvkit_cn_reference** |
 | cnvkit_batch | baits | fixed CNVKIT_BED |
@@ -286,7 +282,6 @@ Stage link table (`$dnanexus_link`: `workflowInputField` = W, `{stage,outputFiel
 | cnvkit_batch | sample_sex | **S purple.sample_sex** |
 | purple_plotter | sample_id | W |
 | purple_plotter | purple_tar | S purple.purple_tar |
-| purple_plotter | qc_report | S qc_flags.qc_report |
 | purple_plotter | cnvkit_cnr | S cnvkit_batch.copy_ratios |
 | purple_plotter | cnvkit_call_cns | S cnvkit_batch.call_segments |
 | purple_plotter | cnvkit_genemetrics | S cnvkit_batch.genemetrics |
@@ -307,7 +302,6 @@ outputs remain accessible as `stage-<id>.<field>`.
 | Workflow output | Class | outputSource (stage.field) |
 |---|---|---|
 | igv_html | file | purple_plotter.igv_html |
-| qc_report | file | qc_flags.qc_report |
 | purple_cnv_somatic_nochr | file | cnv_chr_strip.purple_cnv_somatic_nochr |
 | purple_cnv_gene_nochr | file | cnv_chr_strip.purple_cnv_gene_nochr |
 | cnvkit_call_cns_nochr | file | cnv_chr_strip.cnvkit_call_cns_nochr |

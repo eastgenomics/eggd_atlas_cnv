@@ -1,0 +1,18 @@
+{
+  "executables": {
+    "workflow-ATLAS": {
+      "name": "eggd_atlas_cnv",
+      "analysis": "analysis_1",
+      "per_sample": true,
+      "process_fastqs": false,
+      "inputs": {
+        "input_bam": {"$dnanexus_link": {"analysis": "analysis_0", "stage": "stage-align", "field": "bam"}},
+        "input_bai": {"$dnanexus_link": {"analysis": "analysis_0", "stage": "stage-align", "field": "bai"}},
+        "sample_id": "INPUT-SAMPLE-NAME",
+        "cnvkit_cn_reference": {"$dnanexus_link": {"project": "project-XXXX", "id": "file-PON"}},
+        "ploidy_cap_purity_threshold": 0.35
+      },
+      "output_dirs": {"workflow-ATLAS": "/OUT-FOLDER/STAGE-NAME"}
+    }
+  }
+}

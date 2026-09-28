@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eggd_cgp-purple — Code Walkthrough (3/4)</title>
+<style>
+  :root{
+    --ink:#0d1b2a; --ink-soft:#354656; --muted:#6b7c8d;
+    --line:#e0e7ef; --line-strong:#c5d0db;
+    --bg:#f7f9fb; --paper:#ffffff;
+    --accent:#005eb8; --accent-deep:#003d78; --accent-mid:#1a73c4; --accent-soft:#e3edf8;
+    --green:#1a6e47; --green-soft:#e0f0e8;
+    --amber:#b35c00; --amber-soft:#fdf0e0;
+    --red:#9b2335; --red-soft:#fce8ea;
+    --purple:#4b2d8e; --purple-soft:#ede8f8;
+    --shadow:0 1px 3px rgba(13,27,42,.05),0 4px 20px rgba(13,27,42,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:var(--accent-mid);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1320px;margin:0 auto}
+  @media(max-width:860px){.layout{grid-template-columns:1fr}.toc{display:none}}
+  main{padding:0 56px 96px;max-width:900px}
+  @media(max-width:860px){main{padding:0 24px 64px}}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.015em;font-weight:800;color:var(--ink);margin-bottom:14px;max-width:26ch}
+  h2{font-size:24px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  h2 .sec-num{font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:#fff;
+    padding:3px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
+  h3{font-size:17px;font-weight:700;margin:28px 0 10px;color:var(--ink)}
+  h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:600}
+  p{margin-bottom:13px;color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  ul,ol{margin:0 0 14px;padding-left:22px}
+  li{margin:5px 0;color:var(--ink-soft)}
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:28px 24px;background:var(--paper);border-right:1px solid var(--line);font-size:13px}
+  .toc-brand{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent-deep);margin-bottom:20px;line-height:1.4}
+  .toc-section{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--muted);margin:18px 0 6px}
+  .toc ul{list-style:none}
+  .toc ul li a{display:block;padding:5px 0 5px 16px;color:var(--ink-soft);
+    border-left:2px solid transparent;transition:all .15s;font-size:12.5px;line-height:1.4}
+  .toc ul li a:hover{color:var(--accent);border-left-color:var(--accent);text-decoration:none;padding-left:20px}
+  .toc .meta{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.6}
+  .hero{padding:52px 0 36px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px}
+  .hero .sub{font-size:17px;line-height:1.55;color:var(--ink-soft);max-width:64ch}
+  .hero .meta-row{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap}
+  .hero .meta-item{font-size:12px;color:var(--muted)}
+  .hero .meta-item strong{color:var(--ink-soft)}
+  section{padding-top:52px}
+  section+section{border-top:1px solid var(--line)}
+  footer{padding:32px 56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);max-width:1320px;margin:0 auto;line-height:1.7}
+  .callout{border-radius:6px;padding:18px 22px;margin:18px 0;border:1px solid}
+  .callout.blue{border-color:#b3cce8;background:var(--accent-soft)}
+  .callout.green{border-color:#a8d4bb;background:var(--green-soft)}
+  .callout.amber{border-color:#e8c28a;background:var(--amber-soft)}
+  .callout .tag{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+  .callout.blue .tag{color:var(--accent-deep)}
+  .callout.green .tag{color:var(--green)}
+  .callout.amber .tag{color:var(--amber)}
+  .callout p:last-child{margin:0}
+  .ref{display:inline-block;background:#f0f4f8;border:1px solid var(--line);border-radius:4px;padding:1px 7px;
+    font-size:11.5px;color:var(--ink-soft);font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:#f0f4f8;padding:2px 6px;border-radius:3px;color:var(--accent-deep)}
+  .cb{background:#1e2d3d;border-radius:8px;padding:20px 22px;margin:16px 0;overflow-x:auto}
+  .cb pre{color:#cdd9e5;font:13px/1.75 ui-monospace,Menlo,Consolas,monospace;margin:0;white-space:pre}
+  .cb .c{color:#6e9cbf} .cb .k{color:#79b8ff} .cb .s{color:#9ecbff} .cb .n{color:#b392f0} .cb .f{color:#85e89d} .cb .t{color:#ffab70}
+  .anno{list-style:none;margin:4px 0 24px;padding:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .anno li{display:grid;grid-template-columns:36px 1fr;gap:0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .anno li:last-child{border-bottom:none}
+  .anno .num{background:var(--accent-deep);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .anno .txt{padding:10px 14px;color:var(--ink-soft);line-height:1.5}
+  .anno .txt strong{color:var(--ink)}
+  .fn-box{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 36px}
+  .fn-header{background:var(--accent-deep);padding:14px 18px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .fn-name{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;color:#fff;font-weight:700}
+  .fn-lines{font-size:12px;color:#a8c8e8}
+  .fn-phase{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .fn-phase.p1{background:#b35c00;color:#fff}
+  .fn-phase.p2{background:#1a6e47;color:#fff}
+  .fn-phase.p3{background:#4b2d8e;color:#fff}
+  .fn-phase.p4{background:#9b2335;color:#fff}
+  .fn-phase.setup{background:#005eb8;color:#fff}
+  .fn-body{padding:18px}
+  .fn-body p{margin-bottom:10px}
+  .io-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+  .io-box{background:#f7f9fb;border:1px solid var(--line);border-radius:6px;padding:12px}
+  .io-box h4{margin:0 0 6px}
+  .io-box ul{margin:0;padding-left:18px}
+  .io-box li{font-size:13px;margin:3px 0}
+  .file-section{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#f0f4f8;border:1px solid var(--line);
+    border-radius:6px;margin:20px 0 8px;font-size:13px}
+  .file-section .fs-range{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--muted)}
+  .file-section .fs-name{font-weight:700;color:var(--ink)}
+  .series-nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+  .series-nav a{display:inline-block;padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:600;
+    border:1px solid var(--line);background:var(--paper);color:var(--ink-soft)}
+  .series-nav a.current{background:var(--accent-deep);color:#fff;border-color:var(--accent-deep)}
+  .series-nav a:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="toc">
+  <div class="toc-brand">PERSONAL BRIEFING — eggd_cgp-purple CODE<br>5 July 2026</div>
+  <div class="toc-section">Part 3 of 4</div>
+  <ul>
+    <li><a href="#phase0">Phase 0 — sanitise sample_id</a></li>
+    <li><a href="#phase1">Phase 1 — download &amp; validate</a></li>
+    <li><a href="#phase2">Phase 2 — prepare inputs</a></li>
+    <li><a href="#phase3">Phase 3 — resolve ploidy cap</a></li>
+    <li><a href="#run_purple">run_purple() closure</a></li>
+    <li><a href="#phase45">Phases 4–5 — run &amp; re-run</a></li>
+    <li><a href="#phase67">Phases 6–7 — parse &amp; upload</a></li>
+    <li><a href="#decide">decide()</a></li>
+    <li><a href="#needs-rerun">needs_rerun() / rerun_args()</a></li>
+    <li><a href="#read-purity">read_purity_ploidy()</a></li>
+  </ul>
+  <div class="meta">Source: <span class="ref">src/code.sh</span>, <span class="ref">ploidy_gate.py</span>, <span class="ref">purity.py</span> in eastgenomics/eggd_cgp-purple @ add-app-v1.0.0</div>
+</aside>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Code walkthrough · eggd_atlas_cnv workflow</div>
+  <h1>eggd_cgp-purple — how the app works</h1>
+  <p class="sub">Every function, in order — Part 3 of 4: Function walkthrough.</p>
+  <div class="meta-row">
+    <span class="meta-item"><strong>Author</strong> Joo Wook Ahn</span>
+    <span class="meta-item"><strong>Date</strong> 5 July 2026</span>
+  </div>
+</header>
+
+<div class="series-nav">
+  <a href="260705_eggd_cgp-purple_Code_1.html">1 · High-level outline</a>
+  <a href="260705_eggd_cgp-purple_Code_2.html">2 · Key concepts</a>
+  <a href="260705_eggd_cgp-purple_Code_3.html" class="current">3 · Function walkthrough</a>
+  <a href="260705_eggd_cgp-purple_Code_4.html">4 · Line-by-line reference</a>
+</div>
+
+<section id="phase0">
+  <h2><span class="sec-num">01</span> <code>main()</code> — the whole script</h2>
+  <p><code>code.sh</code> defines exactly one top-level function, <code>main()</code>, plus one local
+  closure (<code>run_purple()</code>) declared inside it. Everything below is a walk through
+  <code>main()</code>'s body phase by phase, using the numbered comment banners already in the source as
+  section boundaries.</p>
+
+  <div class="file-section">
+    <span class="fs-name">Phase 0 — sanitise sample_id</span>
+    <span class="fs-range">code.sh : 17–20</span>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header">
+      <span class="fn-name">case "${sample_id}" in …</span>
+      <span class="fn-lines">lines 17–20</span>
+      <span class="fn-phase setup">GUARD</span>
+    </div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> reject any <code>sample_id</code> that isn't a safe filename fragment,
+      before it gets used to build paths and shell out to <code>rm -rf</code>.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Reads</h4><ul><li><code>$sample_id</code> (job input)</li></ul></div>
+        <div class="io-box"><h4>Effect</h4><ul><li>Exits with status 1 and a message on stderr if unsafe; otherwise no-op</li></ul></div>
+      </div>
+      <p><strong>Key logic:</strong> a bash <code>case</code> pattern matches four unsafe shapes in one go —
+      any character outside <code>A-Za-z0-9._-</code>, the empty string, a leading <code>.</code>, or a
+      leading <code>-</code>. The leading-<code>-</code> check exists specifically because a value like
+      <code>-rf</code> passed to a command expecting a filename could be misinterpreted as a flag.</p>
+      <div class="callout amber">
+        <span class="tag">Design decision</span>
+        <p>This guard is duplicated verbatim across five of the seven apps in the workflow rather than
+        factored into a shared library, because each app is an independent DNAnexus deployable unit with no
+        shared runtime — there is no "import the other app's code" mechanism, so small guards like this are
+        copied rather than shared.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="phase1">
+  <h2><span class="sec-num">02</span> Phase 1 — download &amp; validate the VCF pair</h2>
+  <div class="file-section"><span class="fs-name">Download inputs, then validate somatic_vcf pairing</span><span class="fs-range">code.sh : 22–47</span></div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">dx download ×8, then VCF pairing check</span><span class="fn-lines">lines 22–47</span><span class="fn-phase p1">PHASE 1</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> pull every required file input to local disk, and enforce that the two
+      optional somatic-VCF inputs are supplied together or not at all.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Downloads</h4><ul>
+          <li><code>purple_jar</code>, <code>amber_tar</code>, <code>cobalt_tar</code></li>
+          <li><code>gc_profile</code>, <code>target_regions_bed</code></li>
+          <li><code>ref_fasta</code> (+<code>ref_fai</code>), <code>ensembl_data</code></li>
+          <li><code>somatic_vcf</code> + <code>somatic_vcf_tbi</code> (optional pair)</li>
+        </ul></div>
+        <div class="io-box"><h4>Produces</h4><ul>
+          <li><code>SOMATIC_ARG</code> — either empty or <code>"-somatic_vcf somatic.vcf.gz"</code></li>
+        </ul></div>
+      </div>
+      <p><strong>Key logic:</strong> the pairing check is a single compound boolean —
+      <code>(A set AND B unset) OR (A unset AND B set)</code> — that is true exactly when the two inputs
+      disagree about being present. This has to be checked <em>before</em> either is downloaded, otherwise a
+      lone <code>somatic_vcf</code> with no index would download fine and only fail later, deep inside
+      PURPLE's own error handling, with a much less clear message.</p>
+      <div class="callout blue">
+        <span class="tag">Why not just always require both?</span>
+        <p><code>somatic_vcf</code> is genuinely optional at the workflow level — PURPLE can fit purity/ploidy
+        from AMBER+COBALT alone, just less precisely. The pairing rule only says "if you're going to supply
+        one, supply both", not "you must supply it".</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="phase2">
+  <h2><span class="sec-num">03</span> Phase 2 — prepare inputs</h2>
+  <div class="file-section"><span class="fs-name">Untar AMBER/COBALT, decompress FASTA, untar Ensembl data</span><span class="fs-range">code.sh : 49–68</span></div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">tar -xzf ×3, bgzip -d, samtools faidx</span><span class="fn-lines">lines 49–68</span><span class="fn-phase p1">PHASE 2</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> convert the downloaded archives into the directory layout and file
+      formats PURPLE's command-line interface expects.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Reads</h4><ul><li><code>amber.tar.gz</code>, <code>cobalt.tar.gz</code>, <code>ensembl_data.tar.gz</code>, <code>ref.fasta.gz</code></li></ul></div>
+        <div class="io-box"><h4>Produces</h4><ul>
+          <li><code>AMBER_DIR</code>, <code>COBALT_DIR</code>, <code>ENSEMBL_DIR</code> — directory paths</li>
+          <li><code>ref.fasta</code> — plain-text FASTA + <code>.fai</code> index</li>
+        </ul></div>
+      </div>
+      <p><strong>Key logic:</strong> the directory names inside each tar are not known in advance (they're
+      whatever the upstream AMBER/COBALT apps named them), so each is located by
+      <code>find . -maxdepth 2 -name "&lt;marker-file&gt;" -printf "%h\n"</code> — search for a file that is
+      known to exist only inside that directory, then print its parent (<code>%h</code>). Each lookup is
+      immediately validated with <code>[[ -n "${DIR}" ]] || { echo ERROR; exit 1; }</code> so a malformed
+      upstream tar fails here with a clear message rather than producing a confusing PURPLE crash later.</p>
+      <p>PURPLE requires a plain (non-bgzipped) FASTA, but the reference is stored bgzipped to save space —
+      hence <code>bgzip -d -c ref.fasta.gz &gt; ref.fasta</code> followed by re-indexing with
+      <code>samtools faidx</code> (the downloaded <code>ref_fai</code> index applies to the compressed file,
+      not the decompressed one, so it can't be reused).</p>
+    </div>
+  </div>
+</section>
+
+<section id="phase3">
+  <h2><span class="sec-num">04</span> Phase 3 — resolve the ploidy-cap decision</h2>
+  <div class="file-section"><span class="fs-name">Call ploidy_gate.decide() via a Python heredoc, decode with jq</span><span class="fs-range">code.sh : 96–115</span></div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">EVAL=$(… python3 - "$ATLAS" &lt;&lt;'PY' … )</span><span class="fn-lines">lines 96–115</span><span class="fn-phase p3">PHASE 3</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> turn the three raw job inputs (<code>max_ploidy</code>,
+      <code>ploidy_cap_purity_threshold</code>, <code>ploidy_cap_value</code>) into a concrete decision —
+      which mode applies, and what extra CLI args (if any) pass-1 PURPLE should get.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Reads</h4><ul><li>the three job inputs, passed via environment variables into the subshell</li></ul></div>
+        <div class="io-box"><h4>Produces</h4><ul><li><code>FIRST_ARGS</code> (bash array), <code>CONDITIONAL</code>, <code>MODE</code></li></ul></div>
+      </div>
+      <p><strong>Key logic:</strong> the job inputs are bash variables, but the Python subprocess doesn't
+      inherit bash variables automatically — only environment variables. So the invocation prefixes the
+      <code>python3</code> call with variable assignments (<code>max_ploidy="${max_ploidy:-}" python3 -
+      &lt;&lt;'PY' …</code>), which sets them as environment variables <em>for that one command only</em>. Inside
+      the heredoc, Python reads them back with <code>os.environ.get(...)</code>, calls <code>decide()</code>,
+      and prints three lines of <code>KEY=value</code>-shaped output, one of which is a JSON-encoded array
+      wrapped in a second layer of JSON encoding (<code>json.dumps(json.dumps(...))</code>) so it survives
+      being embedded inside an <code>eval</code>'d bash assignment as a single-quoted string with no
+      unescaped special characters.</p>
+      <p>The result is captured into <code>$EVAL</code> and then literally executed with <code>eval "$EVAL"</code>
+      — this is safe specifically because the three lines are fixed <code>NAME=value</code> assignments
+      generated by trusted code (the heredoc), not arbitrary untrusted input. Finally
+      <code>mapfile -t FIRST_ARGS &lt; &lt;(jq -r '.[]' &lt;&lt;&lt;"$FIRST_ARGS_JSON")</code> decodes the JSON array
+      into a real bash array, so it can later be safely expanded as <code>"${FIRST_ARGS[@]}"</code> without
+      word-splitting problems.</p>
+      <div class="callout green">
+        <span class="tag">Why not just eval the whole ploidy_gate.decide() call inline?</span>
+        <p>Because <code>decide()</code> can <em>raise</em> (<code>PloidyConfigError</code>) on invalid
+        combinations, and a Python exception needs to become a non-zero bash exit code, not a value to parse.
+        A heredoc that runs to completion and prints results is easier to reason about than mixing exception
+        handling across a language boundary; if <code>decide()</code> raises, the Python process exits
+        non-zero, <code>$EVAL</code> is never assigned, and <code>set -e</code> stops the whole script.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="run_purple">
+  <h2><span class="sec-num">05</span> <code>run_purple()</code> — the PURPLE invocation closure</h2>
+  <div class="file-section"><span class="fs-name">A local function capturing AMBER_DIR/COBALT_DIR/ENSEMBL_DIR/SOMATIC_ARG</span><span class="fs-range">code.sh : 76–90</span></div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">run_purple() { … }</span><span class="fn-lines">lines 76–90</span><span class="fn-phase p2">HELPER</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> avoid repeating PURPLE's ~10-argument command line twice (once per
+      possible pass), while letting each call supply its own extra arguments.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Parameters</h4><ul><li><code>"$@"</code> — extra PURPLE CLI args, e.g. <code>-max_ploidy 2</code>, or nothing</li></ul></div>
+        <div class="io-box"><h4>Side effect</h4><ul><li>Runs <code>java -jar purple.jar</code>, writing into <code>${WORK}/</code></li></ul></div>
+      </div>
+      <p><strong>Key logic:</strong> bash functions close over the enclosing scope's variables the same way
+      nested Python functions do — <code>run_purple</code> refers to <code>${AMBER_DIR}</code>,
+      <code>${COBALT_DIR}</code>, <code>${ENSEMBL_DIR}</code> and <code>${SOMATIC_ARG}</code> without
+      receiving them as parameters, because they were already set by Phases 1–2 in the same
+      <code>main()</code> invocation. Only the <em>variable</em> part of the command line — the ploidy-cap
+      flags — is parameterised via <code>"$@"</code>, because that's the only part that differs between
+      pass 1 and pass 2.</p>
+    </div>
+  </div>
+</section>
+
+<section id="phase45">
+  <h2><span class="sec-num">06</span> Phases 4–5 — run pass 1, conditionally re-run</h2>
+  <div class="file-section"><span class="fs-name">rm -rf/mkdir + run_purple, then optional second pass</span><span class="fs-range">code.sh : 117–137</span></div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Pass 1 always; pass 2 iff conditional &amp; purity below threshold</span><span class="fn-lines">lines 117–137</span><span class="fn-phase p3">PHASE 4–5</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> execute PURPLE at least once, and a second time with a ploidy cap if the
+      first fit came back with implausibly low purity.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Reads</h4><ul><li><code>FIRST_ARGS</code>, <code>CONDITIONAL</code>, <code>ploidy_cap_purity_threshold</code>, <code>ploidy_cap_value</code></li></ul></div>
+        <div class="io-box"><h4>Produces</h4><ul><li><code>${WORK}/${sample_id}.purple.purity.tsv</code> and <code>.range.tsv</code> — guaranteed to exist afterward or the script has already exited</li></ul></div>
+      </div>
+      <p><strong>Key logic:</strong> after pass 1, the script re-invokes the <em>same</em> Python
+      <code>purity.read_purity_ploidy()</code> helper used later in Phase 6, just to extract the single
+      <code>purity</code> field — a small amount of duplicated parsing that's cheap and keeps the "did we
+      cross the threshold" check colocated with the pass-1 verification, rather than restructuring the whole
+      script around a shared parse-once step. If a second pass is needed, the <code>WORK</code> directory is
+      wiped and recreated exactly as before pass 1 — see Part 2's discussion of the idempotent two-pass
+      pattern for why this matters.</p>
+    </div>
+  </div>
+</section>
+
+<section id="phase67">
+  <h2><span class="sec-num">07</span> Phases 6–7 — parse final result, assemble &amp; upload</h2>
+  <div class="file-section"><span class="fs-name">Extract scalars via JSON+jq, bundle purple_tar, emit outputs</span><span class="fs-range">code.sh : 139–182</span></div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">SCALARS_JSON=$(…); FPUR/FPLO/FSEX via jq; tar; dx-jobutil-add-output ×7</span><span class="fn-lines">lines 139–182</span><span class="fn-phase p4">PHASE 6–7</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> parse whichever pass's result is final, package everything for upload, and
+      register the app's declared outputs.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Uploads</h4><ul>
+          <li><code>purple_tar</code>, <code>purity_tsv</code>, <code>purity_range_tsv</code></li>
+          <li><code>plots_tar</code> (only if PNGs were generated)</li>
+          <li><code>cnv_somatic_tsv</code>, <code>cnv_gene_tsv</code> (header-only fallback if PURPLE omitted them)</li>
+        </ul></div>
+        <div class="io-box"><h4>Scalar outputs</h4><ul><li><code>purity</code> (float), <code>ploidy</code> (int), <code>sample_sex</code> (string)</li></ul></div>
+      </div>
+      <p><strong>Key logic:</strong> before tarring, the script <code>cp -a "${WORK}/." "${AMBER_DIR}/"</code>
+      — copying PURPLE's output <em>into</em> the AMBER extraction directory — so that the final
+      <code>purple_tar</code> bundles both PURPLE's own files <em>and</em> the AMBER B-allele-frequency file,
+      because a downstream plotter app reads the AMBER BAF file out of <code>purple_tar</code> and this is the
+      simplest way to guarantee it's present without changing the plotter's expectations.</p>
+      <p>The two CNV TSVs get a fallback: <code>[ -f "${CNV_SOMATIC}" ] || printf '...' &gt; "${CNV_SOMATIC}"</code>
+      writes a header-only file if PURPLE didn't produce one (this can happen on very low-signal samples) —
+      guaranteeing the app <em>always</em> emits these two declared outputs, which matters because a DNAnexus
+      app with a required output that's missing fails the whole job.</p>
+      <div class="callout amber">
+        <span class="tag">Design decision — why cp -a into AMBER_DIR rather than the reverse?</span>
+        <p>Copying PURPLE's (smaller) output into AMBER's (already-extracted) directory is cheaper than the
+        other way round, and avoids re-tarring AMBER's contents from scratch. It also means AMBER_DIR ends up
+        containing a superset that gets tarred once, rather than juggling two source directories at tar time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="decide">
+  <h2><span class="sec-num">08</span> <code>decide()</code> — ploidy_gate.py</h2>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">decide(max_ploidy, threshold, cap_value=2)</span><span class="fn-lines">ploidy_gate.py : 33–52</span><span class="fn-phase p3">DECISION</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> the single pure function that turns three raw config values into a
+      validated <code>PloidyDecision</code>. Pure, meaning it has no side effects and always returns the same
+      output for the same input — which is exactly why it's tested independently of the app that calls it.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Parameters</h4><ul>
+          <li><code>max_ploidy: int | None</code></li>
+          <li><code>threshold: float | None</code></li>
+          <li><code>cap_value: int = 2</code></li>
+        </ul></div>
+        <div class="io-box"><h4>Returns / raises</h4><ul>
+          <li><code>PloidyDecision</code> on success</li>
+          <li><code>PloidyConfigError</code> on invalid combinations</li>
+        </ul></div>
+      </div>
+      <p><strong>Key logic:</strong> the function is a cascade of early returns, in priority order:</p>
+      <ol>
+        <li>Both <code>max_ploidy</code> and <code>threshold</code> set → error (mutually exclusive modes).</li>
+        <li><code>max_ploidy</code> set alone → <strong>STATIC</strong> mode: validate it's ≥1, return a decision whose <code>first_pass_args</code> already contains <code>["-max_ploidy", "3"]</code> (say) and <code>conditional=False</code>.</li>
+        <li><code>threshold</code> set alone → <strong>CONDITIONAL</strong> mode: validate <code>cap_value</code> ≥1 and <code>threshold</code> is in the open-closed range <code>(0, 1]</code>, return a decision with empty <code>first_pass_args</code> (pass 1 runs unbounded) and <code>conditional=True</code>.</li>
+        <li>Neither set → <strong>NONE</strong> mode: no cap at all, PURPLE's own defaults apply.</li>
+      </ol>
+      <div class="callout blue">
+        <span class="tag">Why (0, 1] and not [0, 1]?</span>
+        <p>A purity threshold of exactly 0 would mean "the cap never triggers, because purity is never strictly less than 0" — a degenerate, meaningless setting the validation chooses to reject outright rather than silently accept as a no-op.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="needs-rerun">
+  <h2><span class="sec-num">09</span> <code>PloidyDecision.needs_rerun()</code> / <code>.rerun_args()</code></h2>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">needs_rerun(fitted_purity) / rerun_args()</span><span class="fn-lines">ploidy_gate.py : 22–30</span><span class="fn-phase p3">DECISION</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> two tiny methods that answer "should pass 2 happen?" and "what flags does
+      pass 2 need?" given the decision already made by <code>decide()</code> and a purity value only known
+      after pass 1 completes.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>needs_rerun</h4><ul><li>param: <code>fitted_purity: float</code></li><li>returns: <code>bool</code></li></ul></div>
+        <div class="io-box"><h4>rerun_args</h4><ul><li>no params</li><li>returns: <code>["-max_ploidy", str(cap_value)]</code></li></ul></div>
+      </div>
+      <p><strong>Key logic:</strong> <code>needs_rerun</code> is a three-way <code>and</code>: the mode must
+      be conditional, the threshold must not be <code>None</code> (a defensive check — it always is set when
+      <code>conditional=True</code>, by construction in <code>decide()</code>), and the fitted purity must be
+      strictly below the threshold. Note that
+      <strong>the actual app script (<code>code.sh</code>) doesn't call this method at all</strong> — it
+      re-implements the same comparison inline with a one-line <code>python3 -c</code> call
+      (<code>NEED=$(python3 -c "print('yes' if float('$PURITY') &lt; float('...') else 'no')")</code>). The
+      method exists for callers of the Python API (and its own unit tests) and documents the intended
+      contract, even though the bash caller takes a shorter path to the same comparison.</p>
+    </div>
+  </div>
+</section>
+
+<section id="read-purity">
+  <h2><span class="sec-num">10</span> <code>read_purity_ploidy()</code> — purity.py</h2>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">read_purity_ploidy(path) -&gt; PurityFit</span><span class="fn-lines">purity.py : 21–34</span><span class="fn-phase p4">PARSE</span></div>
+    <div class="fn-body">
+      <p><strong>Purpose:</strong> the only place in the whole app that reads PURPLE's purity TSV, so every
+      caller — the pass-1/pass-2 threshold check and the final scalar emission — gets identical parsing and
+      identical error handling.</p>
+      <div class="io-grid">
+        <div class="io-box"><h4>Parameters</h4><ul><li><code>path</code> — path to <code>*.purple.purity.tsv</code></li></ul></div>
+        <div class="io-box"><h4>Returns / raises</h4><ul>
+          <li><code>PurityFit(purity, ploidy, status, sample_sex)</code></li>
+          <li><code>PurityParseError</code> on empty file, missing columns, or non-finite values</li>
+        </ul></div>
+      </div>
+      <p><strong>Key logic:</strong> reads the TSV with <code>csv.DictReader</code> (tab-delimited), takes
+      only the first data row (PURPLE's purity TSV has exactly one), and converts <code>purity</code> and
+      <code>ploidy</code> to floats inside a <code>try/except</code> that catches both a missing column
+      (<code>KeyError</code>) and an unparseable value (<code>ValueError</code>), re-raising both uniformly as
+      <code>PurityParseError</code>. It then explicitly checks <code>math.isfinite()</code> on both values —
+      Python's <code>float("nan")</code> and <code>float("inf")</code> both parse successfully as floats but
+      are not usable results, so this guard exists specifically to catch a PURPLE run that produced
+      structurally valid but numerically meaningless output.</p>
+      <p><code>sample_sex</code> comes from the TSV's <code>gender</code> column, lower-cased — PURPLE writes
+      <code>MALE</code>/<code>FEMALE</code>, but the app's declared scalar output and the downstream stage
+      that consumes it both expect lower case.</p>
+    </div>
+  </div>
+</section>
+
+<div class="series-nav">
+  <a href="260705_eggd_cgp-purple_Code_1.html">1 · High-level outline</a>
+  <a href="260705_eggd_cgp-purple_Code_2.html">2 · Key concepts</a>
+  <a href="260705_eggd_cgp-purple_Code_3.html" class="current">3 · Function walkthrough</a>
+  <a href="260705_eggd_cgp-purple_Code_4.html">4 · Line-by-line reference</a>
+</div>
+
+</main>
+</div>
+<footer>
+  Code walkthrough of <span class="ref">eastgenomics/eggd_cgp-purple</span> (branch <span class="ref">add-app-v1.0.0</span>), part of the <span class="ref">eggd_atlas_cnv</span> somatic CNV workflow. Author: Joo Wook Ahn · 5 July 2026. Continued from Part 2. Continues in Part 4.
+</footer>
+</body>
+</html>

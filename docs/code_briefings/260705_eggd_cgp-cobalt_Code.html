@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eggd_cgp-cobalt — Code Explainer</title>
+<style>
+  :root{
+    --ink:#0d1b2a; --ink-soft:#354656; --muted:#6b7c8d;
+    --line:#e0e7ef; --line-strong:#c5d0db;
+    --bg:#f7f9fb; --paper:#ffffff;
+    --accent:#005eb8; --accent-deep:#003d78; --accent-mid:#1a73c4; --accent-soft:#e3edf8;
+    --green:#1a6e47; --green-soft:#e0f0e8;
+    --amber:#b35c00; --amber-soft:#fdf0e0;
+    --red:#9b2335; --red-soft:#fce8ea;
+    --purple:#4b2d8e; --purple-soft:#ede8f8;
+    --shadow:0 1px 3px rgba(13,27,42,.05),0 4px 20px rgba(13,27,42,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:var(--accent-mid);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1320px;margin:0 auto}
+  @media(max-width:860px){.layout{grid-template-columns:1fr}.toc{display:none}}
+  main{padding:0 56px 96px;max-width:900px}
+  @media(max-width:860px){main{padding:0 24px 64px}}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.015em;font-weight:800;color:var(--ink);margin-bottom:14px;max-width:26ch}
+  h2{font-size:24px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  h2 .sec-num{font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:#fff;
+    padding:3px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
+  h3{font-size:17px;font-weight:700;margin:28px 0 10px;color:var(--ink)}
+  h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:600}
+  p{margin-bottom:13px;color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  ul,ol{margin:0 0 14px;padding-left:22px}
+  li{margin:5px 0;color:var(--ink-soft)}
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:28px 24px;background:var(--paper);border-right:1px solid var(--line);font-size:13px}
+  .toc-brand{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent-deep);margin-bottom:20px;line-height:1.4}
+  .toc-section{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--muted);margin:18px 0 6px}
+  .toc ul{list-style:none}
+  .toc ul li a{display:block;padding:5px 0 5px 16px;color:var(--ink-soft);
+    border-left:2px solid transparent;transition:all .15s;font-size:12.5px;line-height:1.4}
+  .toc ul li a:hover{color:var(--accent);border-left-color:var(--accent);text-decoration:none;padding-left:20px}
+  .toc .meta{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.6}
+  .hero{padding:52px 0 36px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px}
+  .hero .sub{font-size:17px;line-height:1.55;color:var(--ink-soft);max-width:64ch}
+  .hero .meta-row{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap}
+  .hero .meta-item{font-size:12px;color:var(--muted)}
+  .hero .meta-item strong{color:var(--ink-soft)}
+  section{padding-top:52px}
+  section+section{border-top:1px solid var(--line)}
+  footer{padding:32px 56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);max-width:1320px;margin:0 auto;line-height:1.7}
+  .callout{border-radius:6px;padding:18px 22px;margin:18px 0;border:1px solid}
+  .callout.blue{border-color:#b3cce8;background:var(--accent-soft)}
+  .callout.green{border-color:#a8d4bb;background:var(--green-soft)}
+  .callout.amber{border-color:#e8c28a;background:var(--amber-soft)}
+  .callout .tag{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+  .callout.blue .tag{color:var(--accent-deep)}
+  .callout.green .tag{color:var(--green)}
+  .callout.amber .tag{color:var(--amber)}
+  .callout p:last-child{margin:0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f0f4f8;font-weight:600;font-size:12.5px;color:var(--ink);letter-spacing:.02em}
+  tr:hover td{background:#fafbfd}
+  figure{margin:24px 0}
+  .fig-wrap{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:20px;overflow:auto}
+  figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;font-style:italic;line-height:1.5}
+  .ref{display:inline-block;background:#f0f4f8;border:1px solid var(--line);border-radius:4px;padding:1px 7px;
+    font-size:11.5px;color:var(--ink-soft);font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:#f0f4f8;padding:2px 6px;border-radius:3px;color:var(--accent-deep)}
+  .cb{background:#1e2d3d;border-radius:8px;padding:20px 22px;margin:16px 0;overflow-x:auto}
+  .cb pre{color:#cdd9e5;font:13px/1.75 ui-monospace,Menlo,Consolas,monospace;margin:0;white-space:pre}
+  .cb .c{color:#6e9cbf} .cb .k{color:#79b8ff} .cb .s{color:#9ecbff} .cb .n{color:#b392f0} .cb .f{color:#85e89d} .cb .t{color:#ffab70}
+  .acb{margin:20px 0 32px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .acb-header{background:var(--accent-deep);padding:10px 16px;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+  .acb-fn{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;color:#fff;font-weight:700}
+  .acb-desc{font-size:12px;color:#a8c8e8}
+  .acb-code{background:#1e2d3d;padding:0;overflow-x:auto}
+  .acb-code pre{color:#cdd9e5;font:12.5px/1.9 ui-monospace,Menlo,Consolas,monospace;margin:0;padding:16px 20px;white-space:pre}
+  .acb .c{color:#6e9cbf} .acb .k{color:#79b8ff} .acb .s{color:#9ecbff} .acb .n{color:#b392f0} .acb .f{color:#85e89d} .acb .t{color:#ffab70}
+  .acb-annos{border-top:2px solid #2d4a63}
+  .anno-row{display:grid;grid-template-columns:44px 1fr;border-bottom:1px solid var(--line)}
+  .anno-row:last-child{border-bottom:none}
+  .anno-num{background:#f0f4f8;border-right:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;
+    padding:12px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:var(--accent-deep);padding-top:14px}
+  .anno-txt{padding:12px 16px;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+  .anno-txt strong{color:var(--ink)}
+  .fn-box{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 36px}
+  .fn-header{background:var(--accent-deep);padding:14px 18px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .fn-name{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;color:#fff;font-weight:700}
+  .fn-lines{font-size:12px;color:#a8c8e8}
+  .fn-phase{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .fn-phase.p1{background:#b35c00;color:#fff}
+  .fn-phase.p2{background:#1a6e47;color:#fff}
+  .fn-phase.setup{background:#005eb8;color:#fff}
+  .fn-body{padding:18px}
+  .fn-body p{margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="toc">
+  <div class="toc-brand">PERSONAL BRIEFING — eggd_cgp-cobalt CODE<br>5 July 2026</div>
+  <div class="toc-section">Orientation</div>
+  <ul>
+    <li><a href="#what">What this app does</a></li>
+    <li><a href="#flow">The 4 phases</a></li>
+    <li><a href="#deps">Dependencies &amp; I/O</a></li>
+  </ul>
+  <div class="toc-section">Concepts</div>
+  <ul><li><a href="#concepts">The .fai-next-to-.gz quirk</a></li></ul>
+  <div class="toc-section">Walkthrough</div>
+  <ul>
+    <li><a href="#main">main()</a></li>
+    <li><a href="#reference">Line-by-line: the symlink trick</a></li>
+  </ul>
+  <div class="meta">Source: <span class="ref">src/code.sh</span> in eastgenomics/eggd_cgp-cobalt @ add-app-v1.0.0 (65 lines)</div>
+</aside>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Code explainer · eggd_atlas_cnv workflow</div>
+  <h1>eggd_cgp-cobalt — how the app works</h1>
+  <p class="sub">A DNAnexus bash app that runs COBALT to measure read-depth ratios across target regions —
+  the second of PURPLE's three inputs. Structurally almost identical to <code>eggd_cgp-amber</code>, with one
+  genuinely unusual line worth understanding.</p>
+  <div class="meta-row">
+    <span class="meta-item"><strong>Author</strong> Joo Wook Ahn</span>
+    <span class="meta-item"><strong>Date</strong> 5 July 2026</span>
+  </div>
+</header>
+
+<section id="what">
+  <h2><span class="sec-num">01</span> What this app does</h2>
+  <p>
+    <code>src/code.sh</code> wraps <strong>COBALT</strong> (Hartwig Medical Foundation), which measures
+    read depth in windows across the target regions and normalises it against a reference set to produce a
+    per-window log-ratio — a signal of copy-number gain or loss independent of AMBER's B-allele-frequency
+    signal. PURPLE combines both.
+  </p>
+  <p>Like AMBER, this is a direct conversion of a pre-existing applet: COBALT's flags and the
+  <code>cobalt_tar</code> output name are frozen unchanged.</p>
+</section>
+
+<section id="flow">
+  <h2><span class="sec-num">02</span> The 4 phases</h2>
+  <figure>
+    <div class="fig-wrap">
+      <svg viewBox="0 0 820 130" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Four-phase flow: download inputs, run COBALT, verify outputs, tar and upload">
+        <style>.lbl{font:700 12.5px -apple-system,Segoe UI,Inter,sans-serif}.sub{font:11px -apple-system,Segoe UI,Inter,sans-serif}.num{font:800 13px ui-monospace,Menlo,Consolas,monospace}</style>
+        <text x="16" y="20" font-size="12" letter-spacing="2" fill="#6b7c8d">FLOW DIAGRAM</text>
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1a73c4"/></marker></defs>
+        <rect x="16" y="40" width="190" height="70" rx="8" fill="#e3edf8" stroke="#b3cce8"/>
+        <text x="28" y="62" class="num" fill="#003d78">1</text><text x="28" y="82" class="lbl" fill="#003d78">Download + symlink</text><text x="28" y="98" class="sub" fill="#354656">BAM, jar, refs, norm file</text>
+        <line x1="206" y1="75" x2="232" y2="75" stroke="#1a73c4" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="232" y="40" width="180" height="70" rx="8" fill="#ede8f8" stroke="#c9b8ec"/>
+        <text x="244" y="62" class="num" fill="#4b2d8e">2</text><text x="244" y="82" class="lbl" fill="#4b2d8e">Run COBALT</text><text x="244" y="98" class="sub" fill="#354656">java -jar cobalt.jar</text>
+        <line x1="412" y1="75" x2="438" y2="75" stroke="#1a73c4" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="438" y="40" width="180" height="70" rx="8" fill="#fdf0e0" stroke="#e8c28a"/>
+        <text x="450" y="62" class="num" fill="#b35c00">3</text><text x="450" y="82" class="lbl" fill="#b35c00">Verify outputs</text><text x="450" y="98" class="sub" fill="#354656">ratio TSV + PCF non-empty</text>
+        <line x1="618" y1="75" x2="644" y2="75" stroke="#1a73c4" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="644" y="40" width="160" height="70" rx="8" fill="#e0f0e8" stroke="#a8d4bb"/>
+        <text x="656" y="62" class="num" fill="#1a6e47">4</text><text x="656" y="82" class="lbl" fill="#1a6e47">Tar &amp; upload</text><text x="656" y="98" class="sub" fill="#354656">cobalt_tar output</text>
+      </svg>
+    </div>
+    <figcaption>Figure 1 · The same four-phase shape as AMBER, with an extra symlink step folded into phase 1.</figcaption>
+  </figure>
+</section>
+
+<section id="deps">
+  <h2><span class="sec-num">03</span> Dependencies &amp; I/O</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Class</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>tumour_bam</code> / <code>tumour_bai</code></td><td>in (file)</td><td>Chr-prefixed GRCh38 BAM + index</td></tr>
+      <tr><td><code>cobalt_jar</code></td><td>in (file)</td><td>COBALT 3.0-beta.5 executable</td></tr>
+      <tr><td><code>norm_file</code></td><td>in (file)</td><td>Target-region normalisation TSV (panel-specific baseline)</td></tr>
+      <tr><td><code>diploid_regions</code></td><td>in (file)</td><td>Regions expected diploid in a tumour-only sample</td></tr>
+      <tr><td><code>gc_profile</code></td><td>in (file)</td><td>GC-content correction profile</td></tr>
+      <tr><td><code>ref_fasta</code> / <code>ref_fai</code></td><td>in (file)</td><td>Reference genome (bgzipped) + index</td></tr>
+      <tr><td><code>cobalt_tar</code></td><td>out (file)</td><td>Whole COBALT output directory, tarred — consumed by PURPLE</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="concepts">
+  <h2><span class="sec-num">04</span> Key concept: the .fai-next-to-.gz quirk</h2>
+  <p>COBALT expects a bgzipped reference FASTA whose index file sits <em>alongside it with a specific
+  naming convention</em> — <code>ref.fa.gz.fai</code>, not <code>ref.fa.fai</code>. DNAnexus downloads each
+  input to whatever local filename the script requests, and the index file is downloaded under a plain name.
+  Rather than re-running <code>samtools faidx</code> to regenerate an index at the name COBALT expects (slow,
+  and redundant — the correct index already exists, just under the wrong name), the script creates a symlink.</p>
+  <div class="cb"><pre>dx download <span class="s">"${ref_fasta}"</span> -o ref.fa.gz
+dx download <span class="s">"${ref_fai}"</span>   -o ref.fa.fai
+<span class="c"># COBALT needs the .fai next to the gz, under a name matching &lt;fasta&gt;.gz.fai:</span>
+ln -sf ref.fa.fai ref.fa.gz.fai</pre></div>
+  <div class="callout blue">
+    <span class="tag">Why -sf and not a plain copy</span>
+    <p><code>ln -sf</code> creates a symbolic link (a pointer, not a duplicate of the file's contents) and
+    the <code>-f</code> forces overwrite if the target name is somehow already taken. A symlink is
+    essentially free — no data is copied — versus <code>cp</code>, which would duplicate a file that can be
+    tens of megabytes for no benefit.</p>
+  </div>
+</section>
+
+<section id="main">
+  <h2><span class="sec-num">05</span> Function walkthrough: <code>main()</code></h2>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Guard + download + symlink</span><span class="fn-lines">lines 7–30</span><span class="fn-phase setup">SETUP</span></div>
+    <div class="fn-body"><p>Same <code>sample_id</code> guard pattern as AMBER (see that app's explainer for
+    the line-by-line breakdown), followed by eight <code>dx download</code> calls and the <code>.fai</code>
+    symlink covered above.</p></div>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Run COBALT</span><span class="fn-lines">lines 32–41</span><span class="fn-phase p1">RUN</span></div>
+    <div class="fn-body"><p><code>-bam_validation SILENT</code> (vs. AMBER's <code>LENIENT</code>) — a
+    deliberately different validation stringency between the two tools, each frozen from its own original
+    applet rather than harmonised, because changing either risks changing the tool's output.
+    <code>-tumor_only_diploid_bed</code> tells COBALT which regions to treat as the diploid baseline in the
+    absence of a matched normal sample — this workflow is tumour-only throughout.</p></div>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Verify + tar &amp; upload</span><span class="fn-lines">lines 43–61</span><span class="fn-phase p2">VERIFY/UPLOAD</span></div>
+    <div class="fn-body"><p>Identical shape to AMBER's equivalent phases: check the ratio TSV and PCF file
+    are non-empty, log a window count, tar the whole output directory, upload, register.</p></div>
+  </div>
+</section>
+
+<section id="reference">
+  <h2><span class="sec-num">06</span> Line-by-line: the symlink trick</h2>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">code.sh : 25–29</span>
+      <span class="acb-desc">Make COBALT find the FASTA index under the name it expects</span>
+    </div>
+    <div class="acb-code"><pre>dx download <span class="s">"${ref_fasta}"</span>       -o ref.fa.gz          <span class="c"># ①</span>
+dx download <span class="s">"${ref_fai}"</span>         -o ref.fa.fai         <span class="c"># ②</span>
+<span class="c"># COBALT needs the .fai next to the gz</span>
+ln -sf ref.fa.fai ref.fa.gz.fai                              <span class="c"># ③</span></pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>The reference is downloaded under a plain name.</strong> <code>-o ref.fa.gz</code> is an arbitrary local filename choice — it doesn't have to match anything the source file was originally called on DNAnexus.</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>Its index, likewise, under a plain name.</strong> Both files are unrelated to each other by filename at this point — <code>ref.fa.fai</code> is just a name the script chose.</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>The symlink bridges the naming gap.</strong> Many bioinformatics tools that consume a bgzipped FASTA expect its index to be discoverable by appending <code>.fai</code> to the FASTA's own filename — i.e. <code>ref.fa.gz.fai</code>, not <code>ref.fa.fai</code>. <code>ln -sf ref.fa.fai ref.fa.gz.fai</code> creates a new directory entry named <code>ref.fa.gz.fai</code> that simply points at the already-downloaded <code>ref.fa.fai</code> — COBALT opens <code>ref.fa.gz.fai</code> and, via the symlink, actually reads the same bytes as <code>ref.fa.fai</code>, with zero extra disk usage or copy time.</div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+<footer>
+  Code explainer for <span class="ref">eastgenomics/eggd_cgp-cobalt</span> (branch <span class="ref">add-app-v1.0.0</span>), part of the <span class="ref">eggd_atlas_cnv</span> somatic CNV workflow. Author: Joo Wook Ahn · 5 July 2026.
+</footer>
+</body>
+</html>

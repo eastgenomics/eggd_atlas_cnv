@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eggd_cgp-qc-flags — Code Explainer</title>
+<style>
+  :root{
+    --ink:#0d1b2a; --ink-soft:#354656; --muted:#6b7c8d;
+    --line:#e0e7ef; --line-strong:#c5d0db;
+    --bg:#f7f9fb; --paper:#ffffff;
+    --accent:#005eb8; --accent-deep:#003d78; --accent-mid:#1a73c4; --accent-soft:#e3edf8;
+    --green:#1a6e47; --green-soft:#e0f0e8;
+    --amber:#b35c00; --amber-soft:#fdf0e0;
+    --red:#9b2335; --red-soft:#fce8ea;
+    --purple:#4b2d8e; --purple-soft:#ede8f8;
+    --shadow:0 1px 3px rgba(13,27,42,.05),0 4px 20px rgba(13,27,42,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  a{color:var(--accent-mid);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1320px;margin:0 auto}
+  @media(max-width:860px){.layout{grid-template-columns:1fr}.toc{display:none}}
+  main{padding:0 56px 96px;max-width:900px}
+  @media(max-width:860px){main{padding:0 24px 64px}}
+  h1{font-size:38px;line-height:1.1;letter-spacing:-.015em;font-weight:800;color:var(--ink);margin-bottom:14px;max-width:26ch}
+  h2{font-size:24px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  h2 .sec-num{font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:#fff;
+    padding:3px 9px;border-radius:999px;font-weight:700;white-space:nowrap}
+  h3{font-size:17px;font-weight:700;margin:28px 0 10px;color:var(--ink)}
+  h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:600}
+  p{margin-bottom:13px;color:var(--ink-soft)}
+  strong{color:var(--ink)}
+  ul,ol{margin:0 0 14px;padding-left:22px}
+  li{margin:5px 0;color:var(--ink-soft)}
+  .toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    padding:28px 24px;background:var(--paper);border-right:1px solid var(--line);font-size:13px}
+  .toc-brand{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent-deep);margin-bottom:20px;line-height:1.4}
+  .toc-section{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--muted);margin:18px 0 6px}
+  .toc ul{list-style:none}
+  .toc ul li a{display:block;padding:5px 0 5px 16px;color:var(--ink-soft);
+    border-left:2px solid transparent;transition:all .15s;font-size:12.5px;line-height:1.4}
+  .toc ul li a:hover{color:var(--accent);border-left-color:var(--accent);text-decoration:none;padding-left:20px}
+  .toc .meta{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.6}
+  .hero{padding:52px 0 36px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .hero .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:12px}
+  .hero .sub{font-size:17px;line-height:1.55;color:var(--ink-soft);max-width:64ch}
+  .hero .meta-row{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap}
+  .hero .meta-item{font-size:12px;color:var(--muted)}
+  .hero .meta-item strong{color:var(--ink-soft)}
+  section{padding-top:52px}
+  section+section{border-top:1px solid var(--line)}
+  footer{padding:32px 56px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);max-width:1320px;margin:0 auto;line-height:1.7}
+  .callout{border-radius:6px;padding:18px 22px;margin:18px 0;border:1px solid}
+  .callout.blue{border-color:#b3cce8;background:var(--accent-soft)}
+  .callout.green{border-color:#a8d4bb;background:var(--green-soft)}
+  .callout.amber{border-color:#e8c28a;background:var(--amber-soft)}
+  .callout .tag{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+  .callout.blue .tag{color:var(--accent-deep)}
+  .callout.green .tag{color:var(--green)}
+  .callout.amber .tag{color:var(--amber)}
+  .callout p:last-child{margin:0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f0f4f8;font-weight:600;font-size:12.5px;color:var(--ink);letter-spacing:.02em}
+  tr:hover td{background:#fafbfd}
+  figure{margin:24px 0}
+  .fig-wrap{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:20px;overflow:auto}
+  figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;font-style:italic;line-height:1.5}
+  .ref{display:inline-block;background:#f0f4f8;border:1px solid var(--line);border-radius:4px;padding:1px 7px;
+    font-size:11.5px;color:var(--ink-soft);font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:#f0f4f8;padding:2px 6px;border-radius:3px;color:var(--accent-deep)}
+  .cb{background:#1e2d3d;border-radius:8px;padding:20px 22px;margin:16px 0;overflow-x:auto}
+  .cb pre{color:#cdd9e5;font:13px/1.75 ui-monospace,Menlo,Consolas,monospace;margin:0;white-space:pre}
+  .cb .c{color:#6e9cbf} .cb .k{color:#79b8ff} .cb .s{color:#9ecbff} .cb .n{color:#b392f0} .cb .f{color:#85e89d} .cb .t{color:#ffab70}
+  .acb{margin:20px 0 32px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .acb-header{background:var(--accent-deep);padding:10px 16px;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+  .acb-fn{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;color:#fff;font-weight:700}
+  .acb-desc{font-size:12px;color:#a8c8e8}
+  .acb-code{background:#1e2d3d;padding:0;overflow-x:auto}
+  .acb-code pre{color:#cdd9e5;font:12.5px/1.9 ui-monospace,Menlo,Consolas,monospace;margin:0;padding:16px 20px;white-space:pre}
+  .acb .c{color:#6e9cbf} .acb .k{color:#79b8ff} .acb .s{color:#9ecbff} .acb .n{color:#b392f0} .acb .f{color:#85e89d} .acb .t{color:#ffab70}
+  .acb-annos{border-top:2px solid #2d4a63}
+  .anno-row{display:grid;grid-template-columns:44px 1fr;border-bottom:1px solid var(--line)}
+  .anno-row:last-child{border-bottom:none}
+  .anno-num{background:#f0f4f8;border-right:1px solid var(--line);display:flex;align-items:flex-start;justify-content:center;
+    padding:12px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:var(--accent-deep);padding-top:14px}
+  .anno-txt{padding:12px 16px;font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+  .anno-txt strong{color:var(--ink)}
+  .fn-box{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 36px}
+  .fn-header{background:var(--accent-deep);padding:14px 18px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .fn-name{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;color:#fff;font-weight:700}
+  .fn-lines{font-size:12px;color:#a8c8e8}
+  .fn-phase{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;letter-spacing:.04em}
+  .fn-phase.p1{background:#b35c00;color:#fff}
+  .fn-phase.p2{background:#1a6e47;color:#fff}
+  .fn-phase.setup{background:#005eb8;color:#fff}
+  .fn-body{padding:18px}
+  .fn-body p{margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="toc">
+  <div class="toc-brand">PERSONAL BRIEFING — eggd_cgp-qc-flags CODE<br>5 July 2026</div>
+  <div class="toc-section">Orientation</div>
+  <ul>
+    <li><a href="#what">What this app does</a></li>
+    <li><a href="#flow">The flag logic</a></li>
+    <li><a href="#deps">Dependencies &amp; I/O</a></li>
+  </ul>
+  <div class="toc-section">Concepts</div>
+  <ul><li><a href="#concepts">A Python heredoc inside a bash app</a></li></ul>
+  <div class="toc-section">Walkthrough</div>
+  <ul>
+    <li><a href="#main">main() &amp; the Python body</a></li>
+    <li><a href="#reference">Line-by-line: NO_TUMOR best-fit recovery</a></li>
+  </ul>
+  <div class="meta">Source: <span class="ref">src/code.sh</span> in eastgenomics/eggd_cgp-qc-flags @ add-app-v1.0.0 (~170 lines incl. embedded Python)</div>
+</aside>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">Code explainer · eggd_atlas_cnv workflow</div>
+  <h1>eggd_cgp-qc-flags — how the app works</h1>
+  <p class="sub">A DNAnexus app that reads PURPLE's purity summary and turns it into a structured QC report
+  with named confidence flags. Unlike the other apps in this series, most of its logic is a Python script
+  embedded directly inside the bash file via a heredoc.</p>
+  <div class="meta-row">
+    <span class="meta-item"><strong>Author</strong> Joo Wook Ahn</span>
+    <span class="meta-item"><strong>Date</strong> 5 July 2026</span>
+  </div>
+</header>
+
+<section id="what">
+  <h2><span class="sec-num">01</span> What this app does</h2>
+  <p>
+    PURPLE's purity TSV is machine-readable but not immediately actionable — a scientist reviewing a sample
+    still has to know which purity/ploidy/confidence-interval combinations indicate an unreliable fit. This
+    app encodes that domain knowledge as six named flags (<code>PURITY_FLOOR</code>, <code>WGD_SUSPECT</code>,
+    <code>FLAT_GENOME</code>, <code>WIDE_CI</code>, <code>NO_TUMOR_BESTFIT</code>, <code>LOW_SNV_COUNT</code>),
+    computed from simple numeric thresholds against PURPLE's own output, and writes them into a fixed
+    16-column TSV that a downstream IGV-report app displays alongside the copy-number data.
+  </p>
+</section>
+
+<section id="flow">
+  <h2><span class="sec-num">02</span> The flag logic</h2>
+  <table>
+    <thead><tr><th>Flag</th><th>Trigger</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>PURITY_FLOOR</code></td><td>purity &lt; 0.20</td><td>Near the noise floor of the backbone panel — fit may be unreliable</td></tr>
+      <tr><td><code>WGD_SUSPECT</code></td><td>whole-genome-duplication flag set AND purity &lt; 0.35</td><td>WGD calls are unreliable below ~35% purity</td></tr>
+      <tr><td><code>FLAT_GENOME</code></td><td>diploid proportion &gt; 0.85</td><td>Weak copy-number signal; the purity anchor itself is less certain</td></tr>
+      <tr><td><code>WIDE_CI</code></td><td>max purity − min purity &gt; 0.40</td><td>PURPLE's own confidence interval on the fit is wide</td></tr>
+      <tr><td><code>NO_TUMOR_BESTFIT</code></td><td>status = NO_TUMOR</td><td>No tumour signal found; a best-fit purity is recovered from a separate range file instead</td></tr>
+      <tr><td><code>LOW_SNV_COUNT</code></td><td>0 &lt; total SNVs &lt; 50</td><td>Too few variants for SIGS/CUPpa signature/tissue-of-origin calls to be trustworthy (though those tools are out of scope for this workflow version)</td></tr>
+    </tbody>
+  </table>
+  <div class="callout blue">
+    <span class="tag">Always PASS or a flag list, never a hard failure — mostly</span>
+    <p>If no thresholds are crossed, the report's <code>flags</code> column reads <code>PASS</code>. The one
+    exception is the <code>NO_TUMOR</code> best-fit recovery, which <em>can</em> abort the whole app — see
+    §04.</p>
+  </div>
+</section>
+
+<section id="deps">
+  <h2><span class="sec-num">03</span> Dependencies &amp; I/O</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Class</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>purity_tsv</code></td><td>in (file)</td><td>PURPLE's main purity/ploidy summary</td></tr>
+      <tr><td><code>purity_range_tsv</code></td><td>in (file)</td><td>PURPLE's fit-landscape table, used only for <code>NO_TUMOR</code> best-fit recovery</td></tr>
+      <tr><td><code>sigs_allocation</code>, <code>cup_summary</code></td><td>in (file, optional)</td><td>Signature/tissue-of-origin inputs — <strong>left unlinked</strong> in this workflow version; the app degrades gracefully to empty stubs if absent</td></tr>
+      <tr><td><code>qc_report</code></td><td>out (file)</td><td>Fixed 16-column TSV — consumed by the downstream IGV plotter</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="concepts">
+  <h2><span class="sec-num">04</span> Key concept: a Python heredoc inside a bash app</h2>
+  <p>This app is the only one in the workflow whose core logic is written in Python rather than shell
+  arithmetic. Rather than writing a separate <code>.py</code> file and bundling it (the pattern used by
+  <code>eggd_cgp-purple</code> and <code>eggd_cnv_chr_strip</code> for their reusable helper modules), this
+  script embeds the Python source directly using a heredoc — because the logic here is used exactly once, in
+  exactly one place, with no need for unit tests or reuse from another app.</p>
+  <div class="cb"><pre>python3 - <span class="s">"${sample_id}"</span> purity.tsv purity_range.tsv sigs.tsv cuppa.tsv &lt;&lt; <span class="s">'PYEOF'</span>
+<span class="k">import</span> sys, csv
+sample_id = sys.argv[<span class="n">1</span>]
+<span class="c"># … the rest of the Python program …</span>
+<span class="s">PYEOF</span></pre></div>
+  <p><code>python3 -</code> tells Python to read its program from stdin rather than a file; the heredoc
+  (<code>&lt;&lt; 'PYEOF' … PYEOF</code>) supplies that stdin. The five positional arguments after
+  <code>python3 -</code> become <code>sys.argv[1:]</code> inside the Python program — this is how bash
+  variables (<code>sample_id</code>, and the local filenames from the earlier <code>dx download</code> calls)
+  cross into the embedded script, without any environment-variable trick.</p>
+  <div class="callout green">
+    <span class="tag">Why quoted 'PYEOF' and not PYEOF</span>
+    <p>Quoting the heredoc delimiter disables bash's variable/command substitution inside the body — essential
+    here, because the Python source itself contains many <code>$</code>-free but curly-brace-heavy syntax
+    (f-strings like <code>f"{purity:.3f}"</code>) that bash would otherwise try to interpret as its own
+    parameter-expansion syntax.</p>
+  </div>
+</section>
+
+<section id="main">
+  <h2><span class="sec-num">05</span> Function walkthrough</h2>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Bash setup: guard, download, optional-input branches</span><span class="fn-lines">lines 12–27</span><span class="fn-phase setup">SETUP</span></div>
+    <div class="fn-body"><p>The usual <code>sample_id</code> guard, then two required downloads. For the two
+    optional inputs, an explicit <code>if/else</code> either downloads the supplied file or creates an empty
+    stub with <code>touch</code> — deliberately <em>not</em> written as the shorter
+    <code>[[ -n "$x" ]] && dx download … || touch stub</code> idiom, because that shorthand would silently
+    fall through to <code>touch</code> even if the <code>dx download</code> itself failed (a subtle bug where
+    <code>&amp;&amp;</code>/<code>||</code> chains can mask a failure in the first branch).</p></div>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Python: read purity TSV, compute the four numeric flags</span><span class="fn-lines">lines 43–72</span><span class="fn-phase p1">FLAGS 1–4</span></div>
+    <div class="fn-body"><p>Standard <code>csv.DictReader</code> parsing of one data row, then four independent
+    <code>if</code> checks appending to a <code>flags</code> list — each threshold documented in the header
+    comment at the top of the file and reproduced in the table in §02.</p></div>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Python: NO_TUMOR best-fit recovery</span><span class="fn-lines">lines 79–93</span><span class="fn-phase p1">FLAG 5</span></div>
+    <div class="fn-body"><p>Covered line-by-line in §06 below — the one place in this app where a parsing
+    failure is treated as fatal rather than logged and skipped.</p></div>
+  </div>
+  <div class="fn-box">
+    <div class="fn-header"><span class="fn-name">Python: SIGS/CUPpa (best-effort) &amp; write the report</span><span class="fn-lines">lines 95–155</span><span class="fn-phase p2">FLAG 6 / OUTPUT</span></div>
+    <div class="fn-body"><p>The SIGS and CUPpa sections are wrapped in bare <code>try/except:</code> blocks
+    that swallow any error and fall back to <code>'N/A'</code> — appropriate here because these two inputs
+    are optional and out of scope for this workflow version (their stub files are empty), so a parse failure
+    on an intentionally-empty file is expected, not a bug to surface. The final section writes the fixed
+    16-column TSV, with column order matching what the downstream plotter app expects by name.</p></div>
+  </div>
+</section>
+
+<section id="reference">
+  <h2><span class="sec-num">06</span> Line-by-line: NO_TUMOR best-fit recovery</h2>
+  <div class="acb">
+    <div class="acb-header">
+      <span class="acb-fn">code.sh (embedded Python) : 82–93</span>
+      <span class="acb-desc">The one place this app fails loudly rather than degrading gracefully</span>
+    </div>
+    <div class="acb-code"><pre><span class="k">if</span> status == <span class="s">'NO_TUMOR'</span>:
+    flags.append(<span class="s">'NO_TUMOR_BESTFIT'</span>)                                    <span class="c"># ①</span>
+    <span class="c"># For NO_TUMOR the range TSV is required to recover a best fit; a parse/empty</span>
+    <span class="c"># failure must abort rather than emit a 'successful' report with blank columns.</span>
+    <span class="k">try</span>:
+        <span class="k">with</span> open(range_file) <span class="k">as</span> f:
+            rdr = csv.DictReader(f, delimiter=<span class="s">'\t'</span>)
+            best_row = min(rdr, key=<span class="k">lambda</span> r: float(r.get(<span class="s">'score'</span>, <span class="s">'9999'</span>)))  <span class="c"># ②</span>
+            bestfit_purity = float(best_row[<span class="s">'purity'</span>])
+            bestfit_ploidy = float(best_row[<span class="s">'ploidy'</span>])
+            info[<span class="s">'bestfit_purity'</span>] = f<span class="s">"{bestfit_purity:.3f}"</span>
+            info[<span class="s">'bestfit_ploidy'</span>] = f<span class="s">"{bestfit_ploidy:.3f}"</span>
+            info[<span class="s">'bestfit_score'</span>]  = best_row.get(<span class="s">'score'</span>, <span class="s">'N/A'</span>)
+    <span class="k">except</span> Exception <span class="k">as</span> e:
+        print(f<span class="s">"ERROR: NO_TUMOR best-fit recovery failed from {range_file}: {e}"</span>, file=sys.stderr)  <span class="c"># ③</span>
+        sys.exit(<span class="n">1</span>)                                                     <span class="c"># ④</span></pre></div>
+    <div class="acb-annos">
+      <div class="anno-row"><div class="anno-num">①</div><div class="anno-txt"><strong>The flag is appended unconditionally once status is NO_TUMOR.</strong> Unlike the four numeric flags in §05, this one doesn't depend on a threshold — the status itself is the trigger. Whether the report ends up complete or the app aborts is decided by what follows, not by whether the flag gets added.</div></div>
+      <div class="anno-row"><div class="anno-num">②</div><div class="anno-txt"><strong>min() with a key function, not a sort.</strong> <code>min(rdr, key=lambda r: float(r.get('score', '9999')))</code> finds the single row with the lowest <code>score</code> value across the whole range TSV — PURPLE's own fit-quality metric, lower is better — without materialising a sorted list. The default <code>'9999'</code> inside <code>.get()</code> means a row missing the <code>score</code> column entirely is effectively deprioritised rather than raising immediately, though such a row would still need valid <code>purity</code>/<code>ploidy</code> columns to be selected as <code>best_row</code> without failing on the next two lines.</div></div>
+      <div class="anno-row"><div class="anno-num">③</div><div class="anno-txt"><strong>Explicit stderr write before exiting, distinct from the SIGS/CUPpa sections.</strong> Compare this to the bare <code>except: info['total_snvs'] = 'N/A'</code> pattern used for SIGS a few lines later — there, silently degrading is fine because that input is optional and out of scope. Here, a NO_TUMOR sample with an unparseable range file is a data-integrity problem in the workflow's core inputs, not an absent optional feature, so the failure is surfaced with a specific, actionable message identifying which file and which underlying exception caused it.</div></div>
+      <div class="anno-row"><div class="anno-num">④</div><div class="anno-txt"><strong>sys.exit(1) — the only fatal exit inside the embedded Python.</strong> This propagates as the <code>python3</code> process's exit code; because the bash script has <code>set -euo pipefail</code> in effect, a non-zero exit from this heredoc immediately stops <code>code.sh</code> itself. The alternative this code deliberately avoids — catching the exception and writing blank <code>bestfit_purity</code>/<code>bestfit_ploidy</code> columns — would let the app report success on a <code>qc_report.tsv</code> that silently omits the one piece of information a NO_TUMOR row exists to provide.</div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+<footer>
+  Code explainer for <span class="ref">eastgenomics/eggd_cgp-qc-flags</span> (branch <span class="ref">add-app-v1.0.0</span>), part of the <span class="ref">eggd_atlas_cnv</span> somatic CNV workflow. Author: Joo Wook Ahn · 5 July 2026.
+</footer>
+</body>
+</html>
