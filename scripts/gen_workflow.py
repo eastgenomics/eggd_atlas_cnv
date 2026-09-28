@@ -36,7 +36,7 @@ F = {
     "SAGE_PON": {"id": "file-J8F1kX84gPFpJ2kvz13KJ5kP"},
     "ENSEMBL_DATA": {"id": "file-J892FbQ493ZPf7pZzpjX05P6"},
     "PURPLE_JAR": {"id": "file-J893gpQ470jJPF18gjJ1zg7Y"},
-    "PURPLE_TARGET_BED": {"id": "file-J88gVF84Y8X123K6JX8jB8Z5"},
+    "PURPLE_TARGET_BED": {"id": "file-JBp3vx8433GQbP2bJY9J9X7V"},
     "PURPLE_REF_FASTA": {"id": "file-Gb757784XGyY3FPvkPQ74K9z"},
     "PURPLE_REF_FAI": {"id": "file-Gb7578Q4XGyQ8xfvyxJkBgx7"},
     "CNVKIT_BED": {"id": "file-J8F94G845FG5ZG55xFzF1fP6"},
